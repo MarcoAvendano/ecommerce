@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "skills": {
+    "react-hook-form-zod": {
+      "source": "ovachiever/droid-tings",
+      "sourceType": "github",
+      "computedHash": "1ee0fc6e35b6b6973d6117657e644605a5646bd7e6c2d0c55f52ec073679ac65"
+    },
+    "react-query": {
+      "source": "mindrally/skills",
+      "sourceType": "github",
+      "computedHash": "7e9543c800d45f1cd9efaeb9f6e5dcc91d3922b768ec41b06a98341840e0b8c7"
+    },
+    "supabase-nextjs": {
+      "source": "alinaqi/claude-bootstrap",
+      "sourceType": "github",
+      "computedHash": "b0aa1036e141e62b90e96606bb66385bd7cf086aecadf3ccf6fc8c16aaf039b4"
+    },
+    "supabase-postgres-best-practices": {
+      "source": "supabase/agent-skills",
+      "sourceType": "github",
+      "computedHash": "9c87c315aed143ee3b34bec8117100f5035e0df09e6b23e1ecc772cff434c9ad"
+    },
+    "zustand": {
+      "source": "bobmatnyc/claude-mpm-skills",
+      "sourceType": "github",
+      "computedHash": "b87f714ffab159f1758a07cef69806b016360ba74783684155ed83d614f162af"
+    }
+  }
+}
