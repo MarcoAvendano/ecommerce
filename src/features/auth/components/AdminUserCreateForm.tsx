@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { startTransition, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Alert,
   Box,
@@ -13,6 +15,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import CustomFormLabel from "@/app/components/forms/theme-elements/CustomFormLabel";
 import CustomTextField from "@/app/components/forms/theme-elements/CustomTextField";
+import { useCreateAdminUserMutation } from "@/features/auth/admin-users.mutations";
 import {
   createInternalUserSchema,
   type CreateInternalUserInput,
@@ -26,13 +29,13 @@ const roleOptions = [
 ] as const;
 
 export function AdminUserCreateForm() {
+  const router = useRouter();
   const [serverMessage, setServerMessage] = useState<string | null>(null);
-  const [serverError, setServerError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
     reset,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<CreateInternalUserInput>({
     resolver: zodResolver(createInternalUserSchema),
     defaultValues: {
@@ -43,32 +46,26 @@ export function AdminUserCreateForm() {
     },
   });
 
+  const createUserMutation = useCreateAdminUserMutation({
+    onSuccess: (result, variables) => {
+      setServerMessage(result.message);
+      reset({
+        email: "",
+        fullName: "",
+        password: "",
+        roleCode: variables.roleCode,
+      });
+
+      startTransition(() => {
+        router.push("/admin/users?created=1");
+        router.refresh();
+      });
+    },
+  });
+
   const onSubmit = handleSubmit(async (values) => {
     setServerMessage(null);
-    setServerError(null);
-
-    const response = await fetch("/api/admin/users", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(values),
-    });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      setServerError(result.message ?? "No se pudo crear el usuario.");
-      return;
-    }
-
-    setServerMessage(result.message ?? "Usuario creado correctamente.");
-    reset({
-      email: "",
-      fullName: "",
-      password: "",
-      roleCode: values.roleCode,
-    });
+    await createUserMutation.mutateAsync(values);
   });
 
   return (
@@ -78,7 +75,9 @@ export function AdminUserCreateForm() {
           Solo un usuario con rol administrador puede dar de alta nuevas cuentas. Cada usuario se crea con una contrasena temporal.
         </Typography>
         {serverMessage ? <Alert severity="success">{serverMessage}</Alert> : null}
-        {serverError ? <Alert severity="error">{serverError}</Alert> : null}
+        {createUserMutation.error ? (
+          <Alert severity="error">{createUserMutation.error.message}</Alert>
+        ) : null}
         <Box>
           <CustomFormLabel htmlFor="fullName">Nombre completo</CustomFormLabel>
           <CustomTextField
@@ -129,9 +128,19 @@ export function AdminUserCreateForm() {
             ))}
           </CustomTextField>
         </Box>
-        <Button type="submit" variant="contained" color="primary" disabled={isSubmitting}>
-          {isSubmitting ? "Creando usuario..." : "Crear usuario interno"}
-        </Button>
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2} justifyContent="flex-end">
+          <Button component={Link} href="/admin/users" color="inherit">
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            variant="contained"
+            color="primary"
+            disabled={createUserMutation.isPending}
+          >
+            {createUserMutation.isPending ? "Creando usuario..." : "Crear usuario interno"}
+          </Button>
+        </Stack>
       </Stack>
     </Box>
   );

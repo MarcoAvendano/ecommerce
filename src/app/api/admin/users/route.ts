@@ -2,16 +2,115 @@ import { NextResponse } from "next/server";
 import { getAuthContext } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createInternalUserSchema } from "@/features/auth/schemas";
+import type {
+  AdminUserListItem,
+  AdminUsersListResponse,
+  CreateInternalUserResponse,
+} from "@/features/auth/admin-users.types";
 
-export async function POST(request: Request) {
+async function requireAdminRequest() {
   const authContext = await getAuthContext();
 
   if (!authContext) {
-    return NextResponse.json({ message: "No autenticado." }, { status: 401 });
+    return {
+      error: NextResponse.json({ message: "No autenticado." }, { status: 401 }),
+    };
   }
 
   if (!authContext.isAdmin) {
-    return NextResponse.json({ message: "No autorizado." }, { status: 403 });
+    return {
+      error: NextResponse.json({ message: "No autorizado." }, { status: 403 }),
+    };
+  }
+
+  return { authContext };
+}
+
+export async function GET() {
+  const adminRequest = await requireAdminRequest();
+
+  if (adminRequest.error) {
+    return adminRequest.error;
+  }
+
+  const adminClient = createAdminClient();
+
+  const [
+    { data: profiles, error: profilesError },
+    { data: roleAssignments, error: roleAssignmentsError },
+    { data: roles, error: rolesError },
+    { data: usersPage, error: listUsersError },
+  ] = await Promise.all([
+    adminClient
+      .from("profiles")
+      .select("id, email, full_name, status, created_at"),
+    adminClient.from("user_roles").select("user_id, role_id"),
+    adminClient.from("roles").select("id, code, name"),
+    adminClient.auth.admin.listUsers({ page: 1, perPage: 1000 }),
+  ]);
+
+  if (profilesError || roleAssignmentsError || rolesError || listUsersError) {
+    return NextResponse.json(
+      {
+        message:
+          profilesError?.message ??
+          roleAssignmentsError?.message ??
+          rolesError?.message ??
+          listUsersError?.message ??
+          "No se pudo cargar el listado de usuarios.",
+      },
+      { status: 500 },
+    );
+  }
+
+  const authUsersById = new Map(usersPage.users.map((user) => [user.id, user]));
+  const rolesById = new Map((roles ?? []).map((role) => [role.id, role]));
+  const rolesByUserId = new Map<string, { code: string; name: string }[]>();
+
+  for (const assignment of roleAssignments ?? []) {
+    const role = rolesById.get(assignment.role_id);
+
+    if (!role) {
+      continue;
+    }
+
+    const currentRoles = rolesByUserId.get(assignment.user_id) ?? [];
+    currentRoles.push({ code: role.code, name: role.name });
+    rolesByUserId.set(assignment.user_id, currentRoles);
+  }
+
+  const users: AdminUserListItem[] = (profiles ?? [])
+    .map((profile) => {
+      const authUser = authUsersById.get(profile.id);
+      const assignedRoles = rolesByUserId.get(profile.id) ?? [];
+
+      return {
+        id: profile.id,
+        email: profile.email || authUser?.email || "",
+        fullName: profile.full_name,
+        status: profile.status,
+        createdAt: profile.created_at,
+        lastSignInAt: authUser?.last_sign_in_at ?? null,
+        roleCodes: assignedRoles.map((role) => role.code),
+        roleNames: assignedRoles.map((role) => role.name),
+      };
+    })
+    .sort((left, right) => {
+      const leftDate = new Date(left.createdAt).getTime();
+      const rightDate = new Date(right.createdAt).getTime();
+      return rightDate - leftDate;
+    });
+
+  const responseBody: AdminUsersListResponse = { users };
+
+  return NextResponse.json(responseBody);
+}
+
+export async function POST(request: Request) {
+  const adminRequest = await requireAdminRequest();
+
+  if (adminRequest.error) {
+    return adminRequest.error;
   }
 
   const payload = await request.json();
@@ -101,16 +200,18 @@ export async function POST(request: Request) {
     );
   }
 
-  return NextResponse.json(
-    {
-      message: "Usuario creado correctamente.",
-      user: {
-        id: userId,
-        email,
-        fullName,
-        roleCode,
-      },
+  const responseBody: CreateInternalUserResponse = {
+    message: "Usuario creado correctamente.",
+    user: {
+      id: userId,
+      email,
+      fullName,
+      roleCode,
     },
+  };
+
+  return NextResponse.json(
+    responseBody,
     { status: 201 },
   );
 }

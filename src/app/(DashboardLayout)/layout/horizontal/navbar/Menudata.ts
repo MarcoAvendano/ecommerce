@@ -95,7 +95,7 @@ const Menuitems = [
                 id: uniqueId(),
                 title: 'Admin Users',
                 icon: IconPoint,
-                href: '/apps/admin/users',
+                href: '/admin/users',
               },
           {
             id: uniqueId(),
