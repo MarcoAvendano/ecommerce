@@ -56,11 +56,11 @@ const Header = () => {
         {/* Search Dropdown */}
         {/* ------------------------------------------- */}
         <Search />
-        {lgUp ? (
+        {/* {lgUp ? (
           <>
             <Navigation />
           </>
-        ) : null}
+        ) : null} */}
 
         <Box flexGrow={1} />
         <Stack spacing={1} direction="row" alignItems="center">
@@ -68,7 +68,7 @@ const Header = () => {
           {/* ------------------------------------------- */}
           {/* Ecommerce Dropdown */}
           {/* ------------------------------------------- */}
-          <Cart />
+          {/* <Cart /> */}
           {/* ------------------------------------------- */}
           {/* End Ecommerce Dropdown */}
           {/* ------------------------------------------- */}
