@@ -64,6 +64,7 @@ import {
   IconBorderStyle2,
   IconLockAccess,
   IconAppWindow,
+  IconUsersGroup,
 } from "@tabler/icons-react";
 
 const Menuitems: MenuitemsType[] = [
@@ -105,56 +106,18 @@ const Menuitems: MenuitemsType[] = [
         icon: IconPoint,
         href: "/apps/ecommerce/list",
       },
-      {
-        id: uniqueId(),
-        title: "Checkout",
-        icon: IconPoint,
-        href: "/apps/ecommerce/checkout",
-      },
     ],
   },
   {
     id: uniqueId(),
-    title: "Users",
-    icon: IconUserCircle,
-    href: "/apps/user-profile/profile",
-    children: [
-      {
-        id: uniqueId(),
-        title: "Profile",
-        icon: IconPoint,
-        href: "/apps/user-profile/profile",
-      },
-      {
-        id: uniqueId(),
-        title: "Admin Users",
-        icon: IconPoint,
-        href: "/apps/admin/users",
-      },
-      {
-        id: uniqueId(),
-        title: "Followers",
-        icon: IconPoint,
-        href: "/apps/user-profile/followers",
-      },
-      {
-        id: uniqueId(),
-        title: "Friends",
-        icon: IconPoint,
-        href: "/apps/user-profile/friends",
-      },
-      {
-        id: uniqueId(),
-        title: "Gallery",
-        icon: IconPoint,
-        href: "/apps/user-profile/gallery",
-      },
-    ],
+    title: "Usuarios del sistema",
+    icon: IconUsersGroup,
+    href: "/admin/users",
   },
   {
     id: uniqueId(),
     title: "Account Setting",
-    icon: IconUserCircle,
+    icon: IconSettings,
     href: "/theme-pages/account-settings",
   },
 ];
