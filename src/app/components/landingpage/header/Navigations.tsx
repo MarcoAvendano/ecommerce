@@ -119,7 +119,7 @@ const Navigations = () => {
             <StyledButton color="inherit" variant="text" href="https://adminmart.com/support">
                 Support
             </StyledButton>
-            <Button color="primary" variant="contained" href="/auth/auth1/login">
+            <Button color="primary" variant="contained" href="/auth/login">
                 Login
             </Button>
         </>

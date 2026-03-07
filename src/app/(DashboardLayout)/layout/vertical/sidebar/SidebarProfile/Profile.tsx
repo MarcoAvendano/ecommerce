@@ -1,12 +1,20 @@
+"use client";
+
 import { Box, Avatar, Typography, IconButton, Tooltip, useMediaQuery } from '@mui/material';
 import { IconPower } from '@tabler/icons-react';
-import Link from 'next/link';
 import { useCustomizerStore } from '@/stores/use-customizer-store';
+import { createClient } from '@/lib/supabase/client';
 
 export const Profile = () => {
   const customizer = useCustomizerStore();
   const lgUp = useMediaQuery((theme: any) => theme.breakpoints.up('lg'));
   const hideMenu = lgUp ? customizer.isCollapse && !customizer.isSidebarHover : '';
+
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    window.location.href = '/auth/login';
+  };
 
   return (
     <Box
@@ -27,8 +35,7 @@ export const Profile = () => {
             <Tooltip title="Logout" placement="top">
               <IconButton
                 color="primary"
-                component={Link}
-                href="/auth/auth1/login"
+                onClick={handleLogout}
                 aria-label="logout"
                 size="small"
               >

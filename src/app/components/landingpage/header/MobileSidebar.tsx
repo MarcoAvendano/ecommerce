@@ -60,7 +60,7 @@ const MobileSidebar = () => {
                     <Button color="inherit" href="https://adminmart.com/support" sx={{
                         justifyContent: 'start'
                     }}>Support</Button>
-                    <Button color="primary" variant="contained" href="/auth/auth1/login">Login</Button>
+                    <Button color="primary" variant="contained" href="/auth/login">Login</Button>
                 </Stack>
             </Box>
         </>

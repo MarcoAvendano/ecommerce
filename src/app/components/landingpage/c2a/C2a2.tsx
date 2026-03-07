@@ -55,14 +55,14 @@ const C2a2 = () => {
                 <StyledButton
                   variant="contained"
                   color="inherit"
-                  href="/auth/auth1/login"
+                  href="/auth/login"
                 >
                   Login
                 </StyledButton>
                 <StyledButton2
                   variant="outlined"
                   color="inherit"
-                  href="/auth/auth1/register"
+                  href="/auth/login"
                 >
                   Register
                 </StyledButton2>

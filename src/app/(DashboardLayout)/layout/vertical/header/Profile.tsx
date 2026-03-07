@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import {
+  Alert,
   Box,
   Menu,
   Avatar,
@@ -10,6 +11,7 @@ import {
   IconButton,
 } from '@mui/material';
 import * as dropdownData from './data';
+import { createClient } from '@/lib/supabase/client';
 
 import { IconMail } from '@tabler/icons-react';
 import { Stack } from '@mui/system';
@@ -18,11 +20,24 @@ import Image from 'next/image';
 
 const Profile = () => {
   const [anchorEl2, setAnchorEl2] = useState(null);
+  const [logoutError, setLogoutError] = useState<string | null>(null);
   const handleClick2 = (event: any) => {
     setAnchorEl2(event.currentTarget);
   };
   const handleClose2 = () => {
     setAnchorEl2(null);
+  };
+
+  const handleLogout = async () => {
+    const supabase = createClient();
+    const { error } = await supabase.auth.signOut();
+
+    if (error) {
+      setLogoutError(error.message);
+      return;
+    }
+
+    window.location.href = '/auth/login';
   };
 
   return (
@@ -67,6 +82,7 @@ const Profile = () => {
           },
         }}
       >
+        {logoutError ? <Alert severity="error" sx={{ mb: 2 }}>{logoutError}</Alert> : null}
         <Typography variant="h5">User Profile</Typography>
         <Stack direction="row" py={3} spacing={2} alignItems="center">
         <Avatar src={"/images/profile/user-1.jpg"} alt={"ProfileImg"} sx={{ width: 95, height: 95 }} />
@@ -157,7 +173,7 @@ const Profile = () => {
               <Image src={"/images/backgrounds/unlimited-bg.png"} width={150} height={183} style={{ height: 'auto', width: 'auto' }} alt="unlimited" className="signup-bg" />
             </Box>
           </Box>
-          <Button href="/auth/auth1/login" variant="outlined" color="primary" component={Link} fullWidth>
+          <Button variant="outlined" color="primary" fullWidth onClick={handleLogout}>
             Logout
           </Button>
         </Box>
