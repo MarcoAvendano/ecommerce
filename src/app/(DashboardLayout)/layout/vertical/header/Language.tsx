@@ -27,6 +27,11 @@ const Languages = [
     icon: "/images/flag/icon-flag-sa.svg",
     value: 'ar',
   },
+  {
+    flagname: 'Español (Spanish)',
+    icon: "/images/flag/icon-flag-es.svg",
+    value: 'es',
+  }
 ];
 
 const Language = () => {

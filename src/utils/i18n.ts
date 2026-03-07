@@ -4,6 +4,7 @@ import english from '../utils/languages/en.json';
 import french from '../utils/languages/fr.json';
 import arabic from '../utils/languages/ar.json';
 import chinese from '../utils/languages/ch.json';
+import spanish from '../utils/languages/es.json';
 
 const resources = {
   en: {
@@ -18,6 +19,9 @@ const resources = {
   ch: {
     translation: chinese,
   },
+  es: {
+    translation: spanish,
+  }
 };
 
 i18n

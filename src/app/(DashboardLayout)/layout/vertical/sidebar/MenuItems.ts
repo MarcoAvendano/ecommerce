@@ -65,6 +65,7 @@ import {
   IconLockAccess,
   IconAppWindow,
   IconUsersGroup,
+  IconCategory,
 } from "@tabler/icons-react";
 
 const Menuitems: MenuitemsType[] = [
@@ -80,7 +81,7 @@ const Menuitems: MenuitemsType[] = [
   },
   {
     navlabel: true,
-    subheader: "Apps",
+    subheader: "Operations",
   },
   {
     id: uniqueId(),
@@ -107,6 +108,45 @@ const Menuitems: MenuitemsType[] = [
         href: "/apps/ecommerce/list",
       },
     ],
+  },
+  {
+    title: "Sales",
+    icon: IconShoppingCart,
+    // chip: "2",
+    chipColor: "secondary",
+    href: "/apps/sales",
+  },
+  {
+    id: uniqueId(),
+    title: "Products",
+    icon: IconPackage,
+    // chip: "2",
+    chipColor: "secondary",
+    href: "/apps/contacts",
+  },
+  {
+    id: uniqueId(),
+    title: "Categories",
+    icon: IconCategory,
+    // chip: "2",
+    chipColor: "secondary",
+    href: "/apps/contacts",
+  },
+  {
+    id: uniqueId(),
+    title: "Clients",
+    icon: IconPackage,
+    // chip: "2",
+    chipColor: "secondary",
+    href: "/apps/contacts",
+  },
+  {
+    id: uniqueId(),
+    title: "Suppliers",
+    icon: IconPackage,
+    // chip: "2",
+    chipColor: "secondary",
+    href: "/apps/contacts",
   },
   {
     id: uniqueId(),
