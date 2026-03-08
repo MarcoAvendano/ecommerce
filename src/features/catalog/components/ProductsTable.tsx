@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, type ChangeEvent, type MouseEvent } from "react";
+import Link from "next/link";
 import { format } from "date-fns";
 import { useTheme } from "@mui/material/styles";
 import Avatar from "@mui/material/Avatar";
@@ -17,18 +18,16 @@ import TableRow from "@mui/material/TableRow";
 import TableSortLabel from "@mui/material/TableSortLabel";
 import Typography from "@mui/material/Typography";
 import { visuallyHidden } from "@mui/utils";
-import { IconEdit, IconPhoto } from "@tabler/icons-react";
+import { IconPhoto } from "@tabler/icons-react";
 import { CatalogClassicTableToolbar } from "@/features/catalog/components/CatalogClassicTableToolbar";
-import { RowActionsMenu } from "@/features/catalog/components/RowActionsMenu";
 import { Order, getComparator, stableSort } from "@/features/catalog/components/table-utils";
 import type { ProductListItem } from "@/features/catalog/catalog.types";
 
 interface ProductsTableProps {
   products: ProductListItem[];
-  onEdit: (product: ProductListItem) => void;
 }
 
-type ProductHeadCellId = "name" | "createdAt" | "status" | "baseUnit" | "actions";
+type ProductHeadCellId = "name" | "createdAt" | "status" | "baseUnit";
 
 interface ProductHeadCell {
   id: ProductHeadCellId;
@@ -41,7 +40,6 @@ const productHeadCells: readonly ProductHeadCell[] = [
   { id: "createdAt", label: "Fecha", sortable: true },
   { id: "status", label: "Estado", sortable: true },
   { id: "baseUnit", label: "Unidad", sortable: true },
-  { id: "actions", label: "Acciones", sortable: false },
 ];
 
 function getStatusColor(status: ProductListItem["status"]) {
@@ -68,10 +66,6 @@ function getStatusLabel(status: ProductListItem["status"]) {
   }
 }
 
-function getProductTypeLabel(productType: ProductListItem["productType"]) {
-  return productType === "variant_parent" ? "Padre de variantes" : "Simple";
-}
-
 function getProductSortValue(orderBy: ProductHeadCellId, product: ProductListItem) {
   switch (orderBy) {
     case "createdAt":
@@ -86,7 +80,7 @@ function getProductSortValue(orderBy: ProductHeadCellId, product: ProductListIte
   }
 }
 
-export function ProductsTable({ products, onEdit }: ProductsTableProps) {
+export function ProductsTable({ products }: ProductsTableProps) {
   const theme = useTheme();
   const borderColor = theme.palette.divider;
   const [order, setOrder] = useState<Order>("asc");
@@ -137,10 +131,6 @@ export function ProductsTable({ products, onEdit }: ProductsTableProps) {
   const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - filteredProducts.length) : 0;
 
   const handleRequestSort = (_event: MouseEvent<unknown>, property: ProductHeadCellId) => {
-    if (property === "actions") {
-      return;
-    }
-
     const isAsc = orderBy === property && order === "asc";
     setOrder(isAsc ? "desc" : "asc");
     setOrderBy(property);
@@ -215,7 +205,14 @@ export function ProductsTable({ products, onEdit }: ProductsTableProps) {
                         {!product.imageUrl ? <IconPhoto size={18} /> : null}
                       </Avatar>
                       <Box sx={{ ml: 2, minWidth: 0 }}>
-                        <Typography variant="h6" fontWeight="600" noWrap>
+                        <Typography
+                          component={Link}
+                          href={`/apps/products/${product.id}`}
+                          variant="h6"
+                          fontWeight="600"
+                          noWrap
+                          sx={{ textDecoration: "none", color: "inherit", "&:hover": { textDecoration: "underline" } }}
+                        >
                           {product.name}
                         </Typography>
                         <Typography color="textSecondary" variant="subtitle2" noWrap>
@@ -252,29 +249,16 @@ export function ProductsTable({ products, onEdit }: ProductsTableProps) {
                       {product.baseUnit}
                     </Typography>
                   </TableCell>
-                  <TableCell>
-                    <RowActionsMenu
-                      tooltip="Acciones del producto"
-                      actions={[
-                        {
-                          id: "edit-product",
-                          label: "Editar producto",
-                          icon: <IconEdit size={18} />,
-                          onClick: () => onEdit(product),
-                        },
-                      ]}
-                    />
-                  </TableCell>
                 </TableRow>
               ))}
               {emptyRows > 0 ? (
                 <TableRow style={{ height: 53 * emptyRows }}>
-                  <TableCell colSpan={5} />
+                  <TableCell colSpan={4} />
                 </TableRow>
               ) : null}
               {filteredProducts.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5}>
+                  <TableCell colSpan={4}>
                     <Typography variant="body2" color="textSecondary" sx={{ py: 4, textAlign: "center" }}>
                       No hay productos que coincidan con la busqueda actual.
                     </Typography>

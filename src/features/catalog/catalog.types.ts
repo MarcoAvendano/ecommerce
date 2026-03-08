@@ -1,7 +1,9 @@
-import type { Database } from "../../../types/supabase";
+import type { Database, Json } from "../../../types/supabase";
 
 type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
+type BrandRow = Database["public"]["Tables"]["brands"]["Row"];
 type InventoryLocationRow = Database["public"]["Tables"]["inventory_locations"]["Row"];
+type ProductImageRow = Database["public"]["Tables"]["product_images"]["Row"];
 type ProductRow = Database["public"]["Tables"]["products"]["Row"];
 type ProductVariantRow = Database["public"]["Tables"]["product_variants"]["Row"];
 
@@ -16,6 +18,45 @@ export interface InventoryLocationOption {
   code: InventoryLocationRow["code"];
   name: InventoryLocationRow["name"];
   locationType: InventoryLocationRow["location_type"];
+}
+
+export interface BrandOption {
+  id: BrandRow["id"];
+  name: BrandRow["name"];
+  slug: BrandRow["slug"];
+}
+
+export interface ProductImageItem {
+  id: ProductImageRow["id"];
+  productId: ProductImageRow["product_id"];
+  variantId: ProductImageRow["variant_id"];
+  storagePath: ProductImageRow["storage_path"];
+  altText: ProductImageRow["alt_text"];
+  sortOrder: ProductImageRow["sort_order"];
+  createdAt: ProductImageRow["created_at"];
+  publicUrl: string;
+}
+
+export interface ProductOptionGroupValueItem {
+  id?: string;
+  optionGroupId?: string;
+  value: string;
+  sortOrder: number;
+}
+
+export interface ProductOptionGroupItem {
+  id?: string;
+  productId?: string;
+  name: string;
+  sortOrder: number;
+  values: ProductOptionGroupValueItem[];
+}
+
+export interface ProductOptionSelectionItem {
+  groupId: string;
+  groupName: string;
+  valueId: string;
+  value: string;
 }
 
 export interface VariantInventoryBalanceItem {
@@ -60,12 +101,17 @@ export interface ProductListItem {
   description: ProductRow["description"];
   status: ProductRow["status"];
   productType: ProductRow["product_type"];
+  brandId: ProductRow["brand_id"];
   trackInventory: ProductRow["track_inventory"];
   isSellable: ProductRow["is_sellable"];
   isPurchasable: ProductRow["is_purchasable"];
   baseUnit: ProductRow["base_unit"];
   imageUrl: ProductRow["image_url"];
+  storeId: string | null;
+  brand: BrandOption | null;
   categories: CategoryOption[];
+  images: ProductImageItem[];
+  optionGroups: ProductOptionGroupItem[];
   variants: ProductVariantListItem[];
   createdAt: ProductRow["created_at"];
   updatedAt: ProductRow["updated_at"];
@@ -83,6 +129,7 @@ export interface ProductVariantListItem {
   isDefault: ProductVariantRow["is_default"];
   isActive: ProductVariantRow["is_active"];
   optionValues: ProductVariantRow["option_values"];
+  optionSelections: ProductOptionSelectionItem[];
   unitValue: ProductVariantRow["unit_value"];
   unitLabel: ProductVariantRow["unit_label"];
   packSize: ProductVariantRow["pack_size"];
@@ -91,6 +138,11 @@ export interface ProductVariantListItem {
   inventoryBalances: VariantInventoryBalanceItem[];
   createdAt: ProductVariantRow["created_at"];
   updatedAt: ProductVariantRow["updated_at"];
+}
+
+export interface ProductEditorBootstrapResponse {
+  categories: CategoryOption[];
+  stores: InventoryLocationOption[];
 }
 
 export interface ProductsListResponse {
@@ -109,4 +161,33 @@ export interface UploadProductImageResponse {
   message: string;
   path: string;
   publicUrl: string;
+}
+
+export interface SaveProductVariantsPayload {
+  optionGroups: Array<{
+    id?: string;
+    name: string;
+    sortOrder: number;
+    values: Array<{
+      id?: string;
+      value: string;
+      sortOrder: number;
+    }>;
+  }>;
+  variants: Array<{
+    id?: string;
+    name: string;
+    sku: string;
+    barcode?: string;
+    priceCents: number;
+    compareAtPriceCents: number | null;
+    costCents: number;
+    initialStockQty: number;
+    isActive: boolean;
+    optionSelections: ProductOptionSelectionItem[];
+  }>;
+}
+
+export interface SaveProductVariantsResponse {
+  message: string;
 }

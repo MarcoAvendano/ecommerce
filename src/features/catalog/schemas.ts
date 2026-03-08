@@ -4,12 +4,27 @@ const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 const optionValuesSchema = z
   .array(
-    z.object({
-      key: z.string().trim().min(1, "Ingresa el nombre del atributo."),
-      value: z.string().trim().min(1, "Ingresa el valor del atributo."),
-    }),
+    z.union([
+      z.object({
+        key: z.string().trim().min(1, "Ingresa el nombre del atributo."),
+        value: z.string().trim().min(1, "Ingresa el valor del atributo."),
+      }),
+      z.object({
+        groupId: z.string().uuid("Selecciona un grupo de opcion valido."),
+        groupName: z.string().trim().min(1, "Ingresa el nombre del grupo de opciones."),
+        valueId: z.string().uuid("Selecciona un valor de opcion valido."),
+        value: z.string().trim().min(1, "Ingresa el valor del atributo."),
+      }),
+    ]),
   )
   .default([]);
+
+const productOptionSelectionSchema = z.object({
+  groupId: z.string().min(1, "Selecciona un grupo de opcion valido."),
+  groupName: z.string().trim().min(1, "Ingresa el nombre del grupo de opciones."),
+  valueId: z.string().min(1, "Selecciona un valor de opcion valido."),
+  value: z.string().trim().min(1, "Ingresa el valor del atributo."),
+});
 
 export const productVariantSchema = z.object({
   id: z.string().uuid("La variante es invalida.").optional(),
@@ -25,6 +40,7 @@ export const productVariantSchema = z.object({
   costCents: z.coerce.number().int().min(0, "El costo debe ser cero o mayor."),
   isDefault: z.boolean(),
   isActive: z.boolean(),
+  optionSelections: z.array(productOptionSelectionSchema).default([]),
   optionValues: optionValuesSchema,
   unitValue: z.coerce.number().positive("El valor por unidad debe ser mayor a cero.").nullable(),
   unitLabel: z.string().trim().max(50, "La unidad es demasiado larga.").optional(),
@@ -71,6 +87,7 @@ export const createProductSchema = z
     description: z.string().max(1000, "La descripcion no puede superar 1000 caracteres."),
     status: z.enum(["draft", "active", "archived"]),
     productType: z.enum(["simple", "variant_parent"]),
+    brandId: z.string().uuid("Selecciona una marca valida.").nullable().default(null),
     trackInventory: z.boolean(),
     isSellable: z.boolean(),
     isPurchasable: z.boolean(),
@@ -78,6 +95,20 @@ export const createProductSchema = z
     imageUrl: z.union([z.string().url("Ingresa una URL valida."), z.literal("")]),
     initialLocationId: z.string().uuid("Selecciona una ubicacion valida.").nullable(),
     categoryIds: z.array(z.string().uuid("Selecciona categorias validas.")).default([]),
+    optionGroups: z.array(
+      z.object({
+        id: z.string().optional(),
+        name: z.string().trim().min(1, "Ingresa el nombre del grupo de opciones."),
+        sortOrder: z.coerce.number().int().min(0).default(0),
+        values: z.array(
+          z.object({
+            id: z.string().optional(),
+            value: z.string().trim().min(1, "Ingresa un valor para el grupo de opciones."),
+            sortOrder: z.coerce.number().int().min(0).default(0),
+          }),
+        ).default([]),
+      }),
+    ).default([]),
     variants: z.array(productVariantSchema).min(1, "Agrega al menos una variante."),
   })
   .superRefine((value, context) => {

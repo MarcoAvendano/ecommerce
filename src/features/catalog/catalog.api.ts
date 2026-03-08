@@ -3,6 +3,10 @@ import type {
   CreateCategoryResponse,
   CreateProductResponse,
   InventoryLocationOption,
+  ProductEditorBootstrapResponse,
+  ProductListItem,
+  SaveProductVariantsPayload,
+  SaveProductVariantsResponse,
   UpdateCategoryResponse,
   UpdateProductResponse,
   UploadProductImageResponse,
@@ -88,6 +92,43 @@ export async function listInventoryLocations(): Promise<{ locations: InventoryLo
   return {
     locations: payload.locations,
   };
+}
+
+export async function getProductEditorBootstrap(): Promise<ProductEditorBootstrapResponse> {
+  const response = await fetch("/api/catalog/bootstrap", {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  return parseApiResponse<ProductEditorBootstrapResponse>(response);
+}
+
+export async function saveProductVariants(
+  productId: string,
+  input: SaveProductVariantsPayload,
+): Promise<SaveProductVariantsResponse> {
+  const response = await fetch(`/api/catalog/products/${productId}/variants`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(input),
+  });
+
+  return parseApiResponse<SaveProductVariantsResponse>(response);
+}
+
+export async function getProductById(productId: string): Promise<{ product: ProductListItem }> {
+  const response = await fetch(`/api/catalog/products/${productId}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  return parseApiResponse<{ product: ProductListItem }>(response);
 }
 
 export async function createProduct(

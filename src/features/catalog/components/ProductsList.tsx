@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import {
   Alert,
   Box,
@@ -9,33 +10,20 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { ProductCreateDialog } from "@/features/catalog/components/ProductCreateDialog";
 import { ProductsTable } from "@/features/catalog/components/ProductsTable";
 import {
-  useInventoryLocationsQuery,
   useCategoriesQuery,
   useProductsQuery,
 } from "@/features/catalog/catalog.queries";
-import type { ProductListItem } from "@/features/catalog/catalog.types";
 
 export function ProductsList() {
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<ProductListItem | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const productsQuery = useProductsQuery();
   const categoriesQuery = useCategoriesQuery();
-  const inventoryLocationsQuery = useInventoryLocationsQuery();
 
-  const categoryOptions = (categoriesQuery.data?.categories ?? []).map((category) => ({
-    id: category.id,
-    name: category.name,
-    slug: category.slug,
-  }));
-  const inventoryLocations = inventoryLocationsQuery.data?.locations ?? [];
-
-  const isLoading = productsQuery.isLoading || categoriesQuery.isLoading || inventoryLocationsQuery.isLoading;
-  const isError = productsQuery.isError || categoriesQuery.isError || inventoryLocationsQuery.isError;
-  const errorMessage = productsQuery.error?.message ?? categoriesQuery.error?.message ?? inventoryLocationsQuery.error?.message;
+  const isLoading = productsQuery.isLoading || categoriesQuery.isLoading;
+  const isError = productsQuery.isError || categoriesQuery.isError;
+  const errorMessage = productsQuery.error?.message ?? categoriesQuery.error?.message;
 
   return (
     <Stack spacing={3} sx={{ p: { xs: 2, sm: 3 } }}>
@@ -51,7 +39,7 @@ export function ProductsList() {
             Gestiona el catalogo base con SKU, imagen, estado comercial y categorias opcionales por producto.
           </Typography>
         </Box>
-        <Button variant="contained" onClick={() => setCreateDialogOpen(true)}>
+        <Button component={Link} href="/apps/products/new" variant="contained">
           Nuevo producto
         </Button>
       </Stack>
@@ -92,26 +80,8 @@ export function ProductsList() {
       ) : null}
 
       {productsQuery.isSuccess && productsQuery.data.products.length > 0 && !isLoading ? (
-        <ProductsTable products={productsQuery.data.products} onEdit={(product) => setEditingProduct(product)} />
+        <ProductsTable products={productsQuery.data.products} />
       ) : null}
-
-      <ProductCreateDialog
-        open={createDialogOpen}
-        categories={categoryOptions}
-        inventoryLocations={inventoryLocations}
-        onClose={() => setCreateDialogOpen(false)}
-        onCompleted={(message) => setSuccessMessage(message)}
-      />
-
-      <ProductCreateDialog
-        open={Boolean(editingProduct)}
-        categories={categoryOptions}
-        inventoryLocations={inventoryLocations}
-        product={editingProduct}
-        mode="edit"
-        onClose={() => setEditingProduct(null)}
-        onCompleted={(message) => setSuccessMessage(message)}
-      />
     </Stack>
   );
 }
