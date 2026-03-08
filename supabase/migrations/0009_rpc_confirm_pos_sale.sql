@@ -16,6 +16,7 @@ declare
   new_order_id uuid := gen_random_uuid();
   item_record jsonb;
   product_record record;
+  balance_record record;
   current_subtotal integer := 0;
   current_discount integer := coalesce(p_order_discount_cents, 0);
   current_tax integer := 0;
@@ -24,9 +25,14 @@ declare
   line_discount integer;
   line_tax integer;
   line_quantity numeric(12,3);
+  line_unit_price integer;
 begin
   if jsonb_typeof(p_items) <> 'array' or jsonb_array_length(p_items) = 0 then
     raise exception 'POS sale requires at least one item';
+  end if;
+
+  if p_payment_method not in ('cash', 'card', 'transfer', 'mixed') then
+    raise exception 'Unsupported payment method %', p_payment_method;
   end if;
 
   insert into public.orders (
@@ -56,12 +62,20 @@ begin
     line_discount := coalesce((item_record ->> 'discount_cents')::integer, 0);
     line_tax := coalesce((item_record ->> 'tax_cents')::integer, 0);
 
+    if line_quantity is null or line_quantity <= 0 then
+      raise exception 'Quantity must be greater than zero';
+    end if;
+
     select
       pv.id as variant_id,
       pv.product_id,
       pv.sku,
       pv.name as variant_name,
       p.name as product_name,
+      p.status as product_status,
+      p.is_sellable,
+      p.track_inventory,
+      pv.is_active,
       coalesce((item_record ->> 'unit_price_cents')::integer, pv.price_cents) as unit_price_cents
     into product_record
     from public.product_variants pv
@@ -72,8 +86,31 @@ begin
       raise exception 'Variant % not found', item_record ->> 'variant_id';
     end if;
 
-    line_total := ((product_record.unit_price_cents * line_quantity)::integer - line_discount) + line_tax;
-    current_subtotal := current_subtotal + (product_record.unit_price_cents * line_quantity)::integer;
+    if product_record.product_status <> 'active' or product_record.is_sellable is not true then
+      raise exception 'Variant % is not sellable', item_record ->> 'variant_id';
+    end if;
+
+    if product_record.is_active is not true then
+      raise exception 'Variant % is inactive', item_record ->> 'variant_id';
+    end if;
+
+    if product_record.track_inventory then
+      select id, available_qty
+      into balance_record
+      from public.inventory_balances
+      where location_id = p_location_id
+        and product_id = product_record.product_id
+        and coalesce(variant_id, '00000000-0000-0000-0000-000000000000'::uuid) = product_record.variant_id
+      for update;
+
+      if balance_record.id is null or coalesce(balance_record.available_qty, 0) < line_quantity then
+        raise exception 'Insufficient inventory for variant % at location %', item_record ->> 'variant_id', p_location_id;
+      end if;
+    end if;
+
+    line_unit_price := product_record.unit_price_cents;
+    line_total := ((line_unit_price * line_quantity)::integer - line_discount) + line_tax;
+    current_subtotal := current_subtotal + (line_unit_price * line_quantity)::integer;
     current_tax := current_tax + line_tax;
 
     insert into public.order_items (
@@ -95,7 +132,7 @@ begin
       coalesce(product_record.variant_name, product_record.product_name),
       product_record.sku,
       line_quantity,
-      product_record.unit_price_cents,
+      line_unit_price,
       line_discount,
       line_tax,
       line_total

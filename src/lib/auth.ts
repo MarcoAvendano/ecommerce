@@ -50,6 +50,19 @@ export async function getAuthContext(): Promise<AuthContext | null> {
   };
 }
 
+export async function hasAnyRole(requiredRoles: string[]) {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("has_any_role", {
+    required_roles: requiredRoles,
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return Boolean(data);
+}
+
 export async function requireAuth() {
   const authContext = await getAuthContext();
 
@@ -64,6 +77,22 @@ export async function requireAdmin() {
   const authContext = await requireAuth();
 
   if (!authContext.isAdmin) {
+    redirect("/");
+  }
+
+  return authContext;
+}
+
+export async function requireAnyRole(requiredRoles: string[]) {
+  const authContext = await requireAuth();
+
+  if (authContext.isAdmin) {
+    return authContext;
+  }
+
+  const isAllowed = await hasAnyRole(requiredRoles);
+
+  if (!isAllowed) {
     redirect("/");
   }
 

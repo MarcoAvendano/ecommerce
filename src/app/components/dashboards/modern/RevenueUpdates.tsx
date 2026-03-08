@@ -2,7 +2,7 @@ import React from 'react';
 import dynamic from "next/dynamic";
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 import { useTheme } from '@mui/material/styles';
-import { MenuItem, Grid, Stack, Typography, Button, Avatar, Box } from '@mui/material';
+import { MenuItem, Grid, Stack, Typography, Button, Avatar, Box, type SelectChangeEvent } from '@mui/material';
 import { IconGridDots } from '@tabler/icons-react';
 import DashboardCard from '../../shared/DashboardCard';
 import CustomSelect from '../../forms/theme-elements/CustomSelect';
@@ -16,8 +16,8 @@ interface RevenueupdatestwoCardProps {
 const RevenueUpdates = ({ isLoading }: RevenueupdatestwoCardProps) => {
   const [month, setMonth] = React.useState('1');
 
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setMonth(event.target.value);
+  const handleChange = (event: SelectChangeEvent<unknown>) => {
+    setMonth(String(event.target.value));
   };
 
   // chart color

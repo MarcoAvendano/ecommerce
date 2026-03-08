@@ -1,12 +1,30 @@
-import type { Database } from "@/types/supabase";
+import type { Database } from "../../../types/supabase";
 
 type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
+type InventoryLocationRow = Database["public"]["Tables"]["inventory_locations"]["Row"];
 type ProductRow = Database["public"]["Tables"]["products"]["Row"];
+type ProductVariantRow = Database["public"]["Tables"]["product_variants"]["Row"];
 
 export interface CategoryOption {
   id: string;
   name: string;
   slug: string;
+}
+
+export interface InventoryLocationOption {
+  id: InventoryLocationRow["id"];
+  code: InventoryLocationRow["code"];
+  name: InventoryLocationRow["name"];
+  locationType: InventoryLocationRow["location_type"];
+}
+
+export interface VariantInventoryBalanceItem {
+  locationId: InventoryLocationRow["id"];
+  locationName: InventoryLocationRow["name"];
+  locationCode: InventoryLocationRow["code"];
+  onHandQty: number;
+  reservedQty: number;
+  availableQty: number;
 }
 
 export interface CategoryListItem {
@@ -48,8 +66,31 @@ export interface ProductListItem {
   baseUnit: ProductRow["base_unit"];
   imageUrl: ProductRow["image_url"];
   categories: CategoryOption[];
+  variants: ProductVariantListItem[];
   createdAt: ProductRow["created_at"];
   updatedAt: ProductRow["updated_at"];
+}
+
+export interface ProductVariantListItem {
+  id: ProductVariantRow["id"];
+  productId: ProductVariantRow["product_id"];
+  name: ProductVariantRow["name"];
+  sku: ProductVariantRow["sku"];
+  barcode: ProductVariantRow["barcode"];
+  priceCents: ProductVariantRow["price_cents"];
+  compareAtPriceCents: ProductVariantRow["compare_at_price_cents"];
+  costCents: ProductVariantRow["cost_cents"];
+  isDefault: ProductVariantRow["is_default"];
+  isActive: ProductVariantRow["is_active"];
+  optionValues: ProductVariantRow["option_values"];
+  unitValue: ProductVariantRow["unit_value"];
+  unitLabel: ProductVariantRow["unit_label"];
+  packSize: ProductVariantRow["pack_size"];
+  volumeMl: ProductVariantRow["volume_ml"];
+  abv: ProductVariantRow["abv"];
+  inventoryBalances: VariantInventoryBalanceItem[];
+  createdAt: ProductVariantRow["created_at"];
+  updatedAt: ProductVariantRow["updated_at"];
 }
 
 export interface ProductsListResponse {

@@ -2,7 +2,7 @@ import React from "react";
 import dynamic from "next/dynamic";
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 import { useTheme } from '@mui/material/styles';
-import { CardContent, Typography, MenuItem } from '@mui/material';
+import { CardContent, Typography, MenuItem, type SelectChangeEvent } from '@mui/material';
 import BlankCard from '../../shared/BlankCard';
 import { Stack, Box } from '@mui/system';
 import CustomSelect from '../../forms/theme-elements/CustomSelect';
@@ -11,8 +11,8 @@ const MostVisited = () => {
   // for select
   const [month, setMonth] = React.useState('1');
 
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setMonth(event.target.value);
+  const handleChange = (event: SelectChangeEvent<unknown>) => {
+    setMonth(String(event.target.value));
   };
 
   // chart color

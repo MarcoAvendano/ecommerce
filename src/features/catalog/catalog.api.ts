@@ -2,6 +2,7 @@ import type {
   CategoriesListResponse,
   CreateCategoryResponse,
   CreateProductResponse,
+  InventoryLocationOption,
   UpdateCategoryResponse,
   UpdateProductResponse,
   UploadProductImageResponse,
@@ -72,6 +73,21 @@ export async function listProducts(): Promise<ProductsListResponse> {
   });
 
   return parseApiResponse<ProductsListResponse>(response);
+}
+
+export async function listInventoryLocations(): Promise<{ locations: InventoryLocationOption[] }> {
+  const response = await fetch("/api/sales/create-context", {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  const payload = await parseApiResponse<{ locations: InventoryLocationOption[] } & Record<string, unknown>>(response);
+
+  return {
+    locations: payload.locations,
+  };
 }
 
 export async function createProduct(

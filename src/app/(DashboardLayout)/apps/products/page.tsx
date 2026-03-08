@@ -2,8 +2,11 @@ import Breadcrumb from "@/app/(DashboardLayout)/layout/shared/breadcrumb/Breadcr
 import PageContainer from "@/app/components/container/PageContainer";
 import BlankCard from "@/app/components/shared/BlankCard";
 import { ProductsList } from "@/features/catalog/components/ProductsList";
+import { requireAnyRole } from "@/lib/auth";
 
-export default function ProductsPage() {
+export default async function ProductsPage() {
+  await requireAnyRole(["manager"]);
+
   return (
     <PageContainer
       title="Productos del catalogo"

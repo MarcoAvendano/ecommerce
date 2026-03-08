@@ -12,6 +12,7 @@ import {
 import { ProductCreateDialog } from "@/features/catalog/components/ProductCreateDialog";
 import { ProductsTable } from "@/features/catalog/components/ProductsTable";
 import {
+  useInventoryLocationsQuery,
   useCategoriesQuery,
   useProductsQuery,
 } from "@/features/catalog/catalog.queries";
@@ -23,16 +24,18 @@ export function ProductsList() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const productsQuery = useProductsQuery();
   const categoriesQuery = useCategoriesQuery();
+  const inventoryLocationsQuery = useInventoryLocationsQuery();
 
   const categoryOptions = (categoriesQuery.data?.categories ?? []).map((category) => ({
     id: category.id,
     name: category.name,
     slug: category.slug,
   }));
+  const inventoryLocations = inventoryLocationsQuery.data?.locations ?? [];
 
-  const isLoading = productsQuery.isLoading || categoriesQuery.isLoading;
-  const isError = productsQuery.isError || categoriesQuery.isError;
-  const errorMessage = productsQuery.error?.message ?? categoriesQuery.error?.message;
+  const isLoading = productsQuery.isLoading || categoriesQuery.isLoading || inventoryLocationsQuery.isLoading;
+  const isError = productsQuery.isError || categoriesQuery.isError || inventoryLocationsQuery.isError;
+  const errorMessage = productsQuery.error?.message ?? categoriesQuery.error?.message ?? inventoryLocationsQuery.error?.message;
 
   return (
     <Stack spacing={3} sx={{ p: { xs: 2, sm: 3 } }}>
@@ -95,6 +98,7 @@ export function ProductsList() {
       <ProductCreateDialog
         open={createDialogOpen}
         categories={categoryOptions}
+        inventoryLocations={inventoryLocations}
         onClose={() => setCreateDialogOpen(false)}
         onCompleted={(message) => setSuccessMessage(message)}
       />
@@ -102,6 +106,7 @@ export function ProductsList() {
       <ProductCreateDialog
         open={Boolean(editingProduct)}
         categories={categoryOptions}
+        inventoryLocations={inventoryLocations}
         product={editingProduct}
         mode="edit"
         onClose={() => setEditingProduct(null)}
