@@ -163,7 +163,7 @@ export interface UploadProductImageResponse {
   publicUrl: string;
 }
 
-export interface SaveProductVariantsPayload {
+export interface SaveProductOptionGroupsPayload {
   optionGroups: Array<{
     id?: string;
     name: string;
@@ -174,7 +174,15 @@ export interface SaveProductVariantsPayload {
       sortOrder: number;
     }>;
   }>;
-  variants: Array<{
+}
+
+export interface SaveProductOptionGroupsResponse {
+  message: string;
+  optionGroups: ProductOptionGroupItem[];
+}
+
+export interface SaveProductVariantPayload {
+  variant: {
     id?: string;
     name: string;
     sku: string;
@@ -185,9 +193,14 @@ export interface SaveProductVariantsPayload {
     initialStockQty: number;
     isActive: boolean;
     optionSelections: ProductOptionSelectionItem[];
-  }>;
+  };
 }
 
-export interface SaveProductVariantsResponse {
+export interface SaveProductVariantResponse {
+  message: string;
+  variantId: string;
+}
+
+export interface DeleteProductVariantResponse {
   message: string;
 }

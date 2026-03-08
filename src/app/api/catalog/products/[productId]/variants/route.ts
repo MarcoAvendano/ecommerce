@@ -23,296 +23,6 @@ async function requireCatalogRequest() {
   return { authContext };
 }
 
-async function syncProductOptionGroups(
-  adminClient: ReturnType<typeof createAdminClient>,
-  productId: string,
-  optionGroups: Array<{
-    id?: string;
-    name: string;
-    sortOrder: number;
-    values: Array<{
-      id?: string;
-      value: string;
-      sortOrder: number;
-    }>;
-  }>,
-) {
-  const { data: existingGroups, error: existingGroupsError } = await adminClient
-    .from("product_option_groups")
-    .select("id")
-    .eq("product_id", productId);
-
-  if (existingGroupsError) {
-    return { error: existingGroupsError };
-  }
-
-  const existingGroupIds = (existingGroups ?? []).map((group) => group.id);
-
-  if (existingGroupIds.length > 0) {
-    const { error: deleteSelectionsError } = await adminClient
-      .from("product_variant_option_values")
-      .delete()
-      .in("option_group_id", existingGroupIds);
-
-    if (deleteSelectionsError) {
-      return { error: deleteSelectionsError };
-    }
-
-    const { error: deleteValuesError } = await adminClient
-      .from("product_option_group_values")
-      .delete()
-      .in("option_group_id", existingGroupIds);
-
-    if (deleteValuesError) {
-      return { error: deleteValuesError };
-    }
-  }
-
-  const { error: deleteGroupsError } = await adminClient
-    .from("product_option_groups")
-    .delete()
-    .eq("product_id", productId);
-
-  if (deleteGroupsError) {
-    return { error: deleteGroupsError };
-  }
-
-  if (optionGroups.length === 0) {
-    return {
-      error: null,
-      groupIdByName: new Map<string, string>(),
-      valueIdByGroupAndValue: new Map<string, string>(),
-    };
-  }
-
-  const { data: insertedGroups, error: insertGroupsError } = await adminClient
-    .from("product_option_groups")
-    .insert(
-      optionGroups.map((group) => ({
-        product_id: productId,
-        name: group.name,
-        sort_order: group.sortOrder,
-      })),
-    )
-    .select("id, name");
-
-  if (insertGroupsError) {
-    return { error: insertGroupsError };
-  }
-
-  const groupIdByName = new Map((insertedGroups ?? []).map((group) => [group.name, group.id]));
-  const valuesPayload = optionGroups.flatMap((group) => {
-    const optionGroupId = groupIdByName.get(group.name);
-
-    if (!optionGroupId) {
-      return [];
-    }
-
-    return group.values.map((value) => ({
-      option_group_id: optionGroupId,
-      value: value.value,
-      sort_order: value.sortOrder,
-    }));
-  });
-
-  const insertedValues = valuesPayload.length > 0
-    ? await adminClient
-        .from("product_option_group_values")
-        .insert(valuesPayload)
-        .select("id, option_group_id, value")
-    : { data: [], error: null };
-
-  if (insertedValues.error) {
-    return { error: insertedValues.error };
-  }
-
-  const valueIdByGroupAndValue = new Map(
-    (insertedValues.data ?? []).map((value) => [`${value.option_group_id}:${value.value}`, value.id]),
-  );
-
-  return {
-    error: null,
-    groupIdByName,
-    valueIdByGroupAndValue,
-  };
-}
-
-async function syncProductVariants(
-  adminClient: ReturnType<typeof createAdminClient>,
-  productId: string,
-  variants: Array<{
-    id?: string;
-    name: string;
-    sku: string;
-    barcode?: string;
-    priceCents: number;
-    compareAtPriceCents: number | null;
-    costCents: number;
-    initialStockQty: number;
-    isActive: boolean;
-    optionSelections: Array<{
-      groupId: string;
-      groupName: string;
-      valueId: string;
-      value: string;
-    }>;
-  }>,
-  selectionMaps: {
-    groupIdByName: Map<string, string>;
-    valueIdByGroupAndValue: Map<string, string>;
-  },
-) {
-  const { data: existingVariants, error: existingVariantsError } = await adminClient
-    .from("product_variants")
-    .select("id")
-    .eq("product_id", productId);
-
-  if (existingVariantsError) {
-    return existingVariantsError;
-  }
-
-  const existingVariantIds = new Set((existingVariants ?? []).map((variant) => variant.id));
-  const invalidStockEdit = variants.find((variant) =>
-    variant.id && existingVariantIds.has(variant.id) && variant.initialStockQty > 0,
-  );
-
-  if (invalidStockEdit) {
-    return new Error("No puedes modificar el stock inicial de una variante ya creada.");
-  }
-
-  const payload = variants.map((variant, index) => {
-    const nextOptionValues = variant.optionSelections.flatMap((selection) => {
-      const optionGroupId = selectionMaps.groupIdByName.get(selection.groupName) ?? selection.groupId;
-      const optionValueId = selectionMaps.valueIdByGroupAndValue.get(`${optionGroupId}:${selection.value}`) ?? selection.valueId;
-
-      if (!optionGroupId || !optionValueId) {
-        return [];
-      }
-
-      return [{
-        groupId: optionGroupId,
-        groupName: selection.groupName,
-        valueId: optionValueId,
-        value: selection.value,
-      }];
-    });
-
-    const basePayload = {
-      product_id: productId,
-      name: variant.name,
-      sku: variant.sku,
-      barcode: variant.barcode?.trim() || null,
-      price_cents: variant.priceCents,
-      compare_at_price_cents: variant.compareAtPriceCents,
-      cost_cents: variant.costCents,
-      is_default: index === 0,
-      is_active: variant.isActive,
-      option_values: nextOptionValues as Json,
-    };
-
-    return variant.id
-      ? {
-          id: variant.id,
-          ...basePayload,
-        }
-      : basePayload;
-  });
-
-  const updatePayload = payload.filter((variant) => "id" in variant);
-  const insertPayload = payload.filter((variant) => !("id" in variant));
-
-  if (updatePayload.length > 0) {
-    const { error: upsertError } = await adminClient.from("product_variants").upsert(updatePayload);
-
-    if (upsertError) {
-      return upsertError;
-    }
-  }
-
-  if (insertPayload.length > 0) {
-    const { error: insertError } = await adminClient.from("product_variants").insert(insertPayload);
-
-    if (insertError) {
-      return insertError;
-    }
-  }
-
-  const keepVariantIds = variants.flatMap((variant) => (variant.id ? [variant.id] : []));
-  const removableVariantIds = (existingVariants ?? [])
-    .map((variant) => variant.id)
-    .filter((variantId) => !keepVariantIds.includes(variantId));
-
-  if (removableVariantIds.length > 0) {
-    const { error: deleteError } = await adminClient
-      .from("product_variants")
-      .delete()
-      .eq("product_id", productId)
-      .in("id", removableVariantIds);
-
-    if (deleteError) {
-      return deleteError;
-    }
-  }
-
-  const { data: savedVariants, error: savedVariantsError } = await adminClient
-    .from("product_variants")
-    .select("id, sku")
-    .eq("product_id", productId);
-
-  if (savedVariantsError) {
-    return savedVariantsError;
-  }
-
-  const variantIdBySku = new Map((savedVariants ?? []).map((variant) => [variant.sku, variant.id]));
-  const variantIds = (savedVariants ?? []).map((variant) => variant.id);
-
-  if (variantIds.length > 0) {
-    const { error: deleteSelectionsError } = await adminClient
-      .from("product_variant_option_values")
-      .delete()
-      .in("product_variant_id", variantIds);
-
-    if (deleteSelectionsError) {
-      return deleteSelectionsError;
-    }
-  }
-
-  const selectionRows = variants.flatMap((variant) => {
-    const productVariantId = variant.id ?? variantIdBySku.get(variant.sku);
-
-    if (!productVariantId) {
-      return [];
-    }
-
-    return variant.optionSelections.flatMap((selection) => {
-      const optionGroupId = selectionMaps.groupIdByName.get(selection.groupName) ?? selection.groupId;
-      const optionGroupValueId = selectionMaps.valueIdByGroupAndValue.get(`${optionGroupId}:${selection.value}`) ?? selection.valueId;
-
-      if (!optionGroupId || !optionGroupValueId) {
-        return [];
-      }
-
-      return [{
-        product_variant_id: productVariantId,
-        option_group_id: optionGroupId,
-        option_group_value_id: optionGroupValueId,
-      }];
-    });
-  });
-
-  if (selectionRows.length > 0) {
-    const { error: insertSelectionsError } = await adminClient
-      .from("product_variant_option_values")
-      .insert(selectionRows);
-
-    if (insertSelectionsError) {
-      return insertSelectionsError;
-    }
-  }
-
-  return null;
-}
-
 function extractStoreIdFromMetadata(metadata: Json | null | undefined) {
   if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
     return null;
@@ -321,18 +31,103 @@ function extractStoreIdFromMetadata(metadata: Json | null | undefined) {
   return typeof metadata.storeId === "string" ? metadata.storeId : null;
 }
 
+async function buildSelectionMaps(adminClient: ReturnType<typeof createAdminClient>, productId: string) {
+  const [{ data: groups, error: groupsError }, { data: values, error: valuesError }] = await Promise.all([
+    adminClient
+      .from("product_option_groups")
+      .select("id, name")
+      .eq("product_id", productId),
+    adminClient
+      .from("product_option_group_values")
+      .select("id, option_group_id, value"),
+  ]);
+
+  if (groupsError || valuesError) {
+    return {
+      error: groupsError ?? valuesError ?? new Error("No se pudieron cargar los grupos de opciones."),
+      groupIdByName: new Map<string, string>(),
+      valueIdByGroupAndValue: new Map<string, string>(),
+    };
+  }
+
+  return {
+    error: null,
+    groupIdByName: new Map((groups ?? []).map((group) => [group.name, group.id])),
+    valueIdByGroupAndValue: new Map((values ?? []).map((value) => [`${value.option_group_id}:${value.value}`, value.id])),
+  };
+}
+
+async function persistVariantSelections(
+  adminClient: ReturnType<typeof createAdminClient>,
+  variantId: string,
+  optionSelections: Array<{
+    groupId: string;
+    groupName: string;
+    valueId: string;
+    value: string;
+  }>,
+  selectionMaps: {
+    groupIdByName: Map<string, string>;
+    valueIdByGroupAndValue: Map<string, string>;
+  },
+) {
+  const normalizedSelections = optionSelections.flatMap((selection) => {
+    const optionGroupId = selectionMaps.groupIdByName.get(selection.groupName) ?? selection.groupId;
+    const optionGroupValueId = selectionMaps.valueIdByGroupAndValue.get(`${optionGroupId}:${selection.value}`) ?? selection.valueId;
+
+    if (!optionGroupId || !optionGroupValueId) {
+      return [];
+    }
+
+    return [{
+      groupId: optionGroupId,
+      groupName: selection.groupName,
+      valueId: optionGroupValueId,
+      value: selection.value,
+    }];
+  });
+
+  const { error: deleteSelectionsError } = await adminClient
+    .from("product_variant_option_values")
+    .delete()
+    .eq("product_variant_id", variantId);
+
+  if (deleteSelectionsError) {
+    return deleteSelectionsError;
+  }
+
+  if (normalizedSelections.length > 0) {
+    const { error: insertSelectionsError } = await adminClient
+      .from("product_variant_option_values")
+      .insert(
+        normalizedSelections.map((selection) => ({
+          product_variant_id: variantId,
+          option_group_id: selection.groupId,
+          option_group_value_id: selection.valueId,
+        })),
+      );
+
+    if (insertSelectionsError) {
+      return insertSelectionsError;
+    }
+  }
+
+  const { error: updateVariantError } = await adminClient
+    .from("product_variants")
+    .update({ option_values: normalizedSelections as Json })
+    .eq("id", variantId);
+
+  return updateVariantError;
+}
+
 async function createVariantInventoryLoad(
   adminClient: ReturnType<typeof createAdminClient>,
   productId: string,
-  variants: Array<{
-    sku: string;
-    initialStockQty: number;
-    costCents: number;
-  }>,
+  variantId: string,
+  initialStockQty: number,
+  costCents: number,
 ) {
-  const variantsWithStock = variants.filter((variant) => variant.initialStockQty > 0);
-
-  if (variantsWithStock.length === 0) {
+  if (initialStockQty <= 0) {
     return null;
   }
 
@@ -353,43 +148,19 @@ async function createVariantInventoryLoad(
     return null;
   }
 
-  const { data: savedVariants, error: variantsError } = await adminClient
-    .from("product_variants")
-    .select("id, sku")
-    .eq("product_id", productId);
-
-  if (variantsError) {
-    return variantsError;
-  }
-
-  const variantIdBySku = new Map((savedVariants ?? []).map((variant) => [variant.sku, variant.id]));
-  const movementPayload = variantsWithStock.flatMap((variant) => {
-    const variantId = variantIdBySku.get(variant.sku);
-
-    if (!variantId) {
-      return [];
-    }
-
-    return [{
+  const { error: movementError } = await adminClient
+    .from("inventory_movements")
+    .insert({
       location_id: locationId,
       product_id: productId,
       variant_id: variantId,
       movement_type: "initial_load",
-      quantity: variant.initialStockQty,
-      unit_cost_cents: variant.costCents,
+      quantity: initialStockQty,
+      unit_cost_cents: costCents,
       reference_type: "product",
       reference_id: productId,
       notes: "Carga inicial desde gestion de variantes.",
-    }];
-  });
-
-  if (movementPayload.length === 0) {
-    return null;
-  }
-
-  const { error: movementError } = await adminClient
-    .from("inventory_movements")
-    .insert(movementPayload);
+    });
 
   return movementError;
 }
@@ -406,13 +177,7 @@ export async function PUT(
 
   const { productId } = await context.params;
   const payload = (await request.json()) as {
-    optionGroups: Array<{
-      id?: string;
-      name: string;
-      sortOrder: number;
-      values: Array<{ id?: string; value: string; sortOrder: number }>;
-    }>;
-    variants: Array<{
+    variant: {
       id?: string;
       name: string;
       sku: string;
@@ -428,39 +193,194 @@ export async function PUT(
         valueId: string;
         value: string;
       }>;
-    }>;
+    };
   };
 
   const adminClient = createAdminClient();
-  const optionGroupsResult = await syncProductOptionGroups(adminClient, productId, payload.optionGroups ?? []);
+  const variant = payload.variant;
 
-  if (optionGroupsResult.error) {
-    return NextResponse.json(
-      { message: optionGroupsResult.error.message ?? "No se pudieron guardar los grupos de opciones." },
-      { status: 500 },
-    );
+  if (!variant) {
+    return NextResponse.json({ message: "No se recibio la variante." }, { status: 400 });
   }
 
-  const variantsError = await syncProductVariants(adminClient, productId, payload.variants ?? [], {
-    groupIdByName: optionGroupsResult.groupIdByName,
-    valueIdByGroupAndValue: optionGroupsResult.valueIdByGroupAndValue,
+  if (variant.id) {
+    const { data: existingVariant, error: existingVariantError } = await adminClient
+      .from("product_variants")
+      .select("id")
+      .eq("id", variant.id)
+      .eq("product_id", productId)
+      .maybeSingle();
+
+    if (existingVariantError) {
+      return NextResponse.json({ message: existingVariantError.message ?? "No se pudo validar la variante." }, { status: 500 });
+    }
+
+    if (!existingVariant) {
+      return NextResponse.json({ message: "La variante no existe para este producto." }, { status: 404 });
+    }
+
+    if (variant.initialStockQty > 0) {
+      return NextResponse.json({ message: "No puedes modificar el stock inicial de una variante ya creada." }, { status: 400 });
+    }
+  }
+
+  const selectionMaps = await buildSelectionMaps(adminClient, productId);
+
+  if (selectionMaps.error) {
+    return NextResponse.json({ message: selectionMaps.error.message ?? "No se pudieron cargar las opciones del producto." }, { status: 500 });
+  }
+
+  const variantPayload = {
+    product_id: productId,
+    name: variant.name,
+    sku: variant.sku,
+    barcode: variant.barcode?.trim() || null,
+    price_cents: variant.priceCents,
+    compare_at_price_cents: variant.compareAtPriceCents,
+    cost_cents: variant.costCents,
+    is_active: variant.isActive,
+  };
+
+  let variantId = variant.id;
+
+  if (variant.id) {
+    const { error: updateError } = await adminClient
+      .from("product_variants")
+      .update(variantPayload)
+      .eq("id", variant.id)
+      .eq("product_id", productId);
+
+    if (updateError) {
+      return NextResponse.json({ message: updateError.message ?? "No se pudo actualizar la variante." }, { status: 500 });
+    }
+  } else {
+    const { data: defaultVariant, error: defaultVariantError } = await adminClient
+      .from("product_variants")
+      .select("id")
+      .eq("product_id", productId)
+      .eq("is_default", true)
+      .maybeSingle();
+
+    if (defaultVariantError) {
+      return NextResponse.json({ message: defaultVariantError.message ?? "No se pudo validar la variante principal." }, { status: 500 });
+    }
+
+    const { data: insertedVariant, error: insertError } = await adminClient
+      .from("product_variants")
+      .insert({
+        ...variantPayload,
+        is_default: !defaultVariant,
+        option_values: [] as Json,
+      })
+      .select("id")
+      .single();
+
+    if (insertError || !insertedVariant) {
+      return NextResponse.json({ message: insertError?.message ?? "No se pudo crear la variante." }, { status: 500 });
+    }
+
+    variantId = insertedVariant.id;
+
+    if (!variantId) {
+      return NextResponse.json({ message: "No se pudo resolver el identificador de la variante creada." }, { status: 500 });
+    }
+
+    const inventoryError = await createVariantInventoryLoad(
+      adminClient,
+      productId,
+      variantId,
+      variant.initialStockQty,
+      variant.costCents,
+    );
+
+    if (inventoryError) {
+      return NextResponse.json({ message: inventoryError.message ?? "No se pudo registrar el inventario de la variante." }, { status: 500 });
+    }
+  }
+
+  if (!variantId) {
+    return NextResponse.json({ message: "No se pudo resolver el identificador de la variante." }, { status: 500 });
+  }
+
+  const selectionError = await persistVariantSelections(adminClient, variantId, variant.optionSelections, selectionMaps);
+
+  if (selectionError) {
+    return NextResponse.json({ message: selectionError.message ?? "No se pudieron guardar las opciones de la variante." }, { status: 500 });
+  }
+
+  return NextResponse.json({
+    message: variant.id ? "Variante actualizada correctamente." : "Variante creada correctamente.",
+    variantId,
   });
+}
 
-  if (variantsError) {
-    return NextResponse.json(
-      { message: variantsError.message ?? "No se pudieron guardar las variantes." },
-      { status: 500 },
-    );
+export async function DELETE(
+  request: Request,
+  context: { params: Promise<{ productId: string }> },
+) {
+  const catalogRequest = await requireCatalogRequest();
+
+  if (catalogRequest.error) {
+    return catalogRequest.error;
   }
 
-  const inventoryError = await createVariantInventoryLoad(adminClient, productId, payload.variants ?? []);
+  const { productId } = await context.params;
+  const payload = (await request.json()) as { variantId?: string };
 
-  if (inventoryError) {
-    return NextResponse.json(
-      { message: inventoryError.message ?? "No se pudo registrar el inventario de las variantes." },
-      { status: 500 },
-    );
+  if (!payload.variantId) {
+    return NextResponse.json({ message: "Debes indicar la variante a eliminar." }, { status: 400 });
   }
 
-  return NextResponse.json({ message: "Variantes actualizadas correctamente." });
+  const adminClient = createAdminClient();
+  const { data: variant, error: variantError } = await adminClient
+    .from("product_variants")
+    .select("id, is_default")
+    .eq("id", payload.variantId)
+    .eq("product_id", productId)
+    .maybeSingle();
+
+  if (variantError) {
+    return NextResponse.json({ message: variantError.message ?? "No se pudo validar la variante." }, { status: 500 });
+  }
+
+  if (!variant) {
+    return NextResponse.json({ message: "La variante no existe para este producto." }, { status: 404 });
+  }
+
+  const { error: deleteError } = await adminClient
+    .from("product_variants")
+    .delete()
+    .eq("id", payload.variantId)
+    .eq("product_id", productId);
+
+  if (deleteError) {
+    return NextResponse.json({ message: deleteError.message ?? "No se pudo eliminar la variante." }, { status: 500 });
+  }
+
+  if (variant.is_default) {
+    const { data: nextVariant, error: nextVariantError } = await adminClient
+      .from("product_variants")
+      .select("id")
+      .eq("product_id", productId)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (nextVariantError) {
+      return NextResponse.json({ message: nextVariantError.message ?? "No se pudo reasignar la variante principal." }, { status: 500 });
+    }
+
+    if (nextVariant) {
+      const { error: promoteError } = await adminClient
+        .from("product_variants")
+        .update({ is_default: true })
+        .eq("id", nextVariant.id);
+
+      if (promoteError) {
+        return NextResponse.json({ message: promoteError.message ?? "No se pudo reasignar la variante principal." }, { status: 500 });
+      }
+    }
+  }
+
+  return NextResponse.json({ message: "Variante eliminada correctamente." });
 }

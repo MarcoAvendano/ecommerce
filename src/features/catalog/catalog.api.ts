@@ -5,8 +5,11 @@ import type {
   InventoryLocationOption,
   ProductEditorBootstrapResponse,
   ProductListItem,
-  SaveProductVariantsPayload,
-  SaveProductVariantsResponse,
+  SaveProductOptionGroupsPayload,
+  SaveProductOptionGroupsResponse,
+  SaveProductVariantPayload,
+  SaveProductVariantResponse,
+  DeleteProductVariantResponse,
   UpdateCategoryResponse,
   UpdateProductResponse,
   UploadProductImageResponse,
@@ -105,10 +108,25 @@ export async function getProductEditorBootstrap(): Promise<ProductEditorBootstra
   return parseApiResponse<ProductEditorBootstrapResponse>(response);
 }
 
-export async function saveProductVariants(
+export async function saveProductOptionGroups(
   productId: string,
-  input: SaveProductVariantsPayload,
-): Promise<SaveProductVariantsResponse> {
+  input: SaveProductOptionGroupsPayload,
+): Promise<SaveProductOptionGroupsResponse> {
+  const response = await fetch(`/api/catalog/products/${productId}/option-groups`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(input),
+  });
+
+  return parseApiResponse<SaveProductOptionGroupsResponse>(response);
+}
+
+export async function saveProductVariant(
+  productId: string,
+  input: SaveProductVariantPayload,
+): Promise<SaveProductVariantResponse> {
   const response = await fetch(`/api/catalog/products/${productId}/variants`, {
     method: "PUT",
     headers: {
@@ -117,7 +135,22 @@ export async function saveProductVariants(
     body: JSON.stringify(input),
   });
 
-  return parseApiResponse<SaveProductVariantsResponse>(response);
+  return parseApiResponse<SaveProductVariantResponse>(response);
+}
+
+export async function deleteProductVariant(
+  productId: string,
+  variantId: string,
+): Promise<DeleteProductVariantResponse> {
+  const response = await fetch(`/api/catalog/products/${productId}/variants`, {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ variantId }),
+  });
+
+  return parseApiResponse<DeleteProductVariantResponse>(response);
 }
 
 export async function getProductById(productId: string): Promise<{ product: ProductListItem }> {

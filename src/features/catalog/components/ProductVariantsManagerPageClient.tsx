@@ -20,7 +20,11 @@ import { IconEdit, IconPlus, IconTrash, IconX } from "@tabler/icons-react";
 import CustomFormLabel from "@/app/components/forms/theme-elements/CustomFormLabel";
 import CustomTextField from "@/app/components/forms/theme-elements/CustomTextField";
 import { ProductVariantDrawer } from "@/features/catalog/components/ProductVariantDrawer";
-import { useSaveProductVariantsMutation } from "@/features/catalog/catalog.mutations";
+import {
+  useDeleteProductVariantMutation,
+  useSaveProductOptionGroupsMutation,
+  useSaveProductVariantMutation,
+} from "@/features/catalog/catalog.mutations";
 import { useProductDetailQuery } from "@/features/catalog/catalog.queries";
 import type { ProductOptionGroupItem } from "@/features/catalog/catalog.types";
 import type { ProductVariantDrawerInput } from "@/features/catalog/product-editor.schemas";
@@ -38,7 +42,13 @@ export function ProductVariantsManagerPageClient({ productId }: ProductVariantsM
   const [draftValuesByGroupId, setDraftValuesByGroupId] = useState<Record<string, string>>({});
   const [message, setMessage] = useState<string | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
-  const saveVariantsMutation = useSaveProductVariantsMutation({
+  const saveOptionGroupsMutation = useSaveProductOptionGroupsMutation({
+    onSuccess: (result) => setMessage(result.message),
+  });
+  const saveVariantMutation = useSaveProductVariantMutation({
+    onSuccess: (result) => setMessage(result.message),
+  });
+  const deleteVariantMutation = useDeleteProductVariantMutation({
     onSuccess: (result) => setMessage(result.message),
   });
 
@@ -81,12 +91,12 @@ export function ProductVariantsManagerPageClient({ productId }: ProductVariantsM
 
   const currentVariant = editingVariantIndex !== null ? variants[editingVariantIndex] ?? null : null;
 
-  const persistVariants = async (nextVariants: ProductVariantDrawerInput[], nextOptionGroups = optionGroups) => {
+  const persistOptionGroups = async (nextOptionGroups: ProductOptionGroupItem[]) => {
     setMessage(null);
     setLocalError(null);
 
     try {
-      await saveVariantsMutation.mutateAsync({
+      const result = await saveOptionGroupsMutation.mutateAsync({
         productId,
         input: {
           optionGroups: nextOptionGroups.map((group) => ({
@@ -99,15 +109,66 @@ export function ProductVariantsManagerPageClient({ productId }: ProductVariantsM
               sortOrder: value.sortOrder,
             })),
           })),
-          variants: nextVariants,
         },
       });
+
+      setOptionGroups(result.optionGroups);
     } catch (error) {
-      setLocalError(error instanceof Error ? error.message : "No se pudieron guardar las variantes.");
+      setLocalError(error instanceof Error ? error.message : "No se pudieron guardar los grupos de opciones.");
     }
   };
 
-  const hasInvalidExistingStockEdit = (nextVariants: ProductVariantDrawerInput[]) => nextVariants.some((variant) => variant.id && variant.initialStockQty > 0);
+  const persistVariant = async (nextVariant: ProductVariantDrawerInput) => {
+    setMessage(null);
+    setLocalError(null);
+
+    try {
+      const result = await saveVariantMutation.mutateAsync({
+        productId,
+        input: {
+          variant: nextVariant,
+        },
+      });
+
+      setVariants((currentVariants) => {
+        if (nextVariant.id) {
+          return currentVariants.map((variant) => (variant.id === nextVariant.id ? nextVariant : variant));
+        }
+
+        const nextVariants = [...currentVariants];
+        const insertedIndex = nextVariants.findIndex((variant) => !variant.id && variant.sku === nextVariant.sku);
+
+        if (insertedIndex >= 0) {
+          nextVariants[insertedIndex] = {
+            ...nextVariant,
+            id: result.variantId,
+            initialStockQty: 0,
+          };
+        }
+
+        return nextVariants;
+      });
+    } catch (error) {
+      setLocalError(error instanceof Error ? error.message : "No se pudo guardar la variante.");
+    }
+  };
+
+  const removeVariant = async (variant: ProductVariantDrawerInput) => {
+    if (!variant.id) {
+      setVariants((currentVariants) => currentVariants.filter((item) => item !== variant));
+      return;
+    }
+
+    setMessage(null);
+    setLocalError(null);
+
+    try {
+      await deleteVariantMutation.mutateAsync({ productId, variantId: variant.id });
+      setVariants((currentVariants) => currentVariants.filter((item) => item.id !== variant.id));
+    } catch (error) {
+      setLocalError(error instanceof Error ? error.message : "No se pudo eliminar la variante.");
+    }
+  };
 
   return (
     <Stack spacing={3} sx={{ p: { xs: 2, md: 3 } }}>
@@ -116,7 +177,9 @@ export function ProductVariantsManagerPageClient({ productId }: ProductVariantsM
           <Typography variant="h5">Grupos de opciones</Typography>
           {message ? <Alert severity="success">{message}</Alert> : null}
           {localError ? <Alert severity="error">{localError}</Alert> : null}
-          {saveVariantsMutation.error ? <Alert severity="error">{saveVariantsMutation.error.message}</Alert> : null}
+          {saveOptionGroupsMutation.error ? <Alert severity="error">{saveOptionGroupsMutation.error.message}</Alert> : null}
+          {saveVariantMutation.error ? <Alert severity="error">{saveVariantMutation.error.message}</Alert> : null}
+          {deleteVariantMutation.error ? <Alert severity="error">{deleteVariantMutation.error.message}</Alert> : null}
           {optionGroups.map((group, index) => (
             <Stack key={group.id || index} direction={{ xs: "column", md: "row" }} spacing={2}>
               <Box sx={{ flex: 1 }}>
@@ -187,25 +250,30 @@ export function ProductVariantsManagerPageClient({ productId }: ProductVariantsM
               </Box>
             </Stack>
           ))}
-          <Button
-            variant="outlined"
-            startIcon={<IconPlus size={18} />}
-            onClick={() => {
-              const nextOptionGroups = [
-                ...optionGroups,
-                {
-                  id: `local-group-${optionGroups.length}`,
-                  productId,
-                  name: "",
-                  sortOrder: optionGroups.length,
-                  values: [],
-                },
-              ];
-              setOptionGroups(nextOptionGroups);
-            }}
-          >
-            Agregar grupo de opciones
-          </Button>
+          <Stack direction="row" spacing={1}>
+            <Button
+              variant="outlined"
+              startIcon={<IconPlus size={18} />}
+              onClick={() => {
+                const nextOptionGroups = [
+                  ...optionGroups,
+                  {
+                    id: `local-group-${optionGroups.length}`,
+                    productId,
+                    name: "",
+                    sortOrder: optionGroups.length,
+                    values: [],
+                  },
+                ];
+                setOptionGroups(nextOptionGroups);
+              }}
+            >
+              Agregar grupo de opciones
+            </Button>
+            <Button variant="contained" onClick={() => void persistOptionGroups(optionGroups)}>
+              Guardar grupos
+            </Button>
+          </Stack>
         </Stack>
       </Box>
 
@@ -253,11 +321,7 @@ export function ProductVariantsManagerPageClient({ productId }: ProductVariantsM
                       }}>
                       <IconEdit size={18} />
                       </IconButton>
-                      <IconButton color="error" onClick={() => {
-                        const nextVariants = variants.filter((_, itemIndex) => itemIndex !== index);
-                        setVariants(nextVariants);
-                        void persistVariants(nextVariants);
-                      }}>
+                      <IconButton color="error" onClick={() => { void removeVariant(variant); }}>
                       <IconTrash size={18} />
                       </IconButton>
                     </Stack>
@@ -278,20 +342,16 @@ export function ProductVariantsManagerPageClient({ productId }: ProductVariantsM
           setEditingVariantIndex(null);
         }}
         onSubmit={(value) => {
-          const nextVariants = editingVariantIndex !== null
-            ? variants.map((variant, index) => (index === editingVariantIndex ? value : variant))
-            : [...variants, value];
+          const nextVariant = editingVariantIndex !== null && variants[editingVariantIndex]
+            ? { ...value, id: variants[editingVariantIndex]?.id }
+            : value;
 
-          if (hasInvalidExistingStockEdit(nextVariants)) {
-            setMessage(null);
-            setLocalError("No puedes modificar el stock inicial de una variante ya creada.");
-            return;
-          }
-
-          setVariants(nextVariants);
+          setVariants((currentVariants) => editingVariantIndex !== null
+            ? currentVariants.map((variant, index) => (index === editingVariantIndex ? nextVariant : variant))
+            : [...currentVariants, nextVariant]);
           setDrawerOpen(false);
           setEditingVariantIndex(null);
-          void persistVariants(nextVariants);
+          void persistVariant(nextVariant);
         }}
       />
     </Stack>
