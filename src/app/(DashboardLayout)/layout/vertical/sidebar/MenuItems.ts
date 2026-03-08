@@ -122,7 +122,7 @@ const Menuitems: MenuitemsType[] = [
     icon: IconPackage,
     // chip: "2",
     chipColor: "secondary",
-    href: "/apps/contacts",
+    href: "/apps/products",
   },
   {
     id: uniqueId(),
@@ -130,7 +130,7 @@ const Menuitems: MenuitemsType[] = [
     icon: IconCategory,
     // chip: "2",
     chipColor: "secondary",
-    href: "/apps/contacts",
+    href: "/apps/categories",
   },
   {
     id: uniqueId(),
