@@ -11,6 +11,7 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Drawer,
   FormControlLabel,
   MenuItem,
   Stack,
@@ -39,6 +40,7 @@ import {
   type CreateProductInput,
   type ProductDialogValues,
 } from "@/features/catalog/schemas";
+import { ResponsiveDrawer } from "@/app/components/ui-components/drawer/ResponsiveDrawer";
 
 interface ProductCreateDialogProps {
   open: boolean;
@@ -217,7 +219,10 @@ export function ProductCreateDialog({
   });
 
   return (
-    <Dialog open={open} onClose={handleDialogClose} fullWidth maxWidth="md">
+    <ResponsiveDrawer
+      open={open}
+      onClose={handleDialogClose}
+    >
       <DialogTitle>{mode === "edit" ? "Editar producto" : "Nuevo producto"}</DialogTitle>
       <Box component="form" onSubmit={onSubmit} noValidate>
         <DialogContent dividers>
@@ -242,6 +247,7 @@ export function ProductCreateDialog({
                       {...field}
                       id="product-name"
                       fullWidth
+                      size="small"
                       error={Boolean(errors.name)}
                       helperText={errors.name?.message}
                     />
@@ -258,6 +264,7 @@ export function ProductCreateDialog({
                       {...field}
                       id="product-sku"
                       fullWidth
+                      size="small"
                       error={Boolean(errors.sku)}
                       helperText={errors.sku?.message}
                     />
@@ -277,6 +284,7 @@ export function ProductCreateDialog({
                       {...field}
                       id="product-slug"
                       fullWidth
+                      size="small"
                       error={Boolean(errors.slug)}
                       helperText={errors.slug?.message}
                     />
@@ -293,6 +301,7 @@ export function ProductCreateDialog({
                       {...field}
                       id="product-base-unit"
                       fullWidth
+                      size="small"
                       error={Boolean(errors.baseUnit)}
                       helperText={errors.baseUnit?.message}
                     />
@@ -313,6 +322,7 @@ export function ProductCreateDialog({
                     fullWidth
                     multiline
                     minRows={3}
+                    size="small"
                     error={Boolean(errors.description)}
                     helperText={errors.description?.message}
                   />
@@ -332,6 +342,7 @@ export function ProductCreateDialog({
                       id="product-status"
                       select
                       fullWidth
+                      size="small"
                       error={Boolean(errors.status)}
                       helperText={errors.status?.message}
                     >
@@ -353,6 +364,7 @@ export function ProductCreateDialog({
                       id="product-type"
                       select
                       fullWidth
+                      size="small"
                       error={Boolean(errors.productType)}
                       helperText={errors.productType?.message}
                     >
@@ -384,7 +396,7 @@ export function ProductCreateDialog({
                           {selectedImageFile instanceof File ? selectedImageFile.name : "Sin imagen seleccionada"}
                         </Typography>
                         <Typography variant="body2" color="textSecondary">
-                          PNG, JPG o WEBP. Se almacenara en Supabase Storage.
+                          PNG, JPG o WEBP.
                         </Typography>
                       </Box>
                     </Stack>
@@ -418,7 +430,7 @@ export function ProductCreateDialog({
                 )}
               />
               <Typography variant="caption" color="textSecondary">
-                {errors.imageUrl?.message ?? "Si ya existe una imagen, se mostrara aqui y podras reemplazarla."}
+                {errors.imageUrl?.message}
               </Typography>
             </Box>
 
@@ -426,15 +438,16 @@ export function ProductCreateDialog({
               name="categoryIds"
               control={control}
               render={({ field }) => {
-                  const selectedCategoryIds = field.value ?? [];
-                  const selectedCategories = categories.filter((category) =>
-                    selectedCategoryIds.includes(category.id),
-                  );
+                const selectedCategoryIds = field.value ?? [];
+                const selectedCategories = categories.filter((category) =>
+                  selectedCategoryIds.includes(category.id),
+                );
 
                 return (
                   <Autocomplete
                     multiple
                     options={categories}
+                    size="small"
                     value={selectedCategories}
                     getOptionLabel={(option) => option.name}
                     isOptionEqualToValue={(option, value) => option.id === value.id}
@@ -520,6 +533,6 @@ export function ProductCreateDialog({
           </Button>
         </DialogActions>
       </Box>
-    </Dialog>
+    </ResponsiveDrawer>
   );
 }

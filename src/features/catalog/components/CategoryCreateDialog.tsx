@@ -27,6 +27,7 @@ import {
   createCategorySchema,
   type CreateCategoryInput,
 } from "@/features/catalog/schemas";
+import { ResponsiveDrawer } from "@/app/components/ui-components/drawer/ResponsiveDrawer";
 
 type CategoryFormValues = Omit<CreateCategoryInput, "sortOrder"> & {
   sortOrder: number | string;
@@ -141,9 +142,9 @@ export function CategoryCreateDialog({
   });
 
   return (
-    <Dialog open={open} onClose={handleDialogClose} fullWidth maxWidth="sm">
+    <ResponsiveDrawer open={open} onClose={handleDialogClose} sx={{width: '100%', maxWidth: 500}}>
       <DialogTitle>{mode === "edit" ? "Editar categoria" : "Nueva categoria"}</DialogTitle>
-      <Box component="form" onSubmit={onSubmit} noValidate>
+      <Box component="form" onSubmit={onSubmit} noValidate width={'500px'}>
         <DialogContent dividers>
           <Stack spacing={2}>
             {serverMessage ? <Alert severity="success">{serverMessage}</Alert> : null}
@@ -284,6 +285,6 @@ export function CategoryCreateDialog({
           </Button>
         </DialogActions>
       </Box>
-    </Dialog>
+    </ResponsiveDrawer>
   );
 }

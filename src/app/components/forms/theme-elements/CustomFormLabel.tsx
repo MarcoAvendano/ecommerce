@@ -12,7 +12,7 @@ const CustomFormLabel = styled((props: any) => (
   />
 ))(() => ({
   marginBottom: '5px',
-  marginTop: '25px',
+  marginTop: '15px',
   display: 'block',
 }));
 
