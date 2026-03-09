@@ -77,7 +77,7 @@ const Menuitems: MenuitemsType[] = [
     id: uniqueId(),
     title: "eCommerce",
     icon: IconShoppingCart,
-    href: "/dashboards/ecommerce",
+    href: "/",
   },
   {
     navlabel: true,

@@ -17,7 +17,6 @@ import {
 } from "@/features/catalog/catalog.queries";
 
 export function ProductsList() {
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const productsQuery = useProductsQuery();
   const categoriesQuery = useCategoriesQuery();
 
@@ -26,25 +25,16 @@ export function ProductsList() {
   const errorMessage = productsQuery.error?.message ?? categoriesQuery.error?.message;
 
   return (
-    <Stack spacing={3} sx={{ p: { xs: 2, sm: 3 } }}>
+    <Stack spacing={1} sx={{ p: { xs: 2, sm: 3 } }}>
       <Stack
         direction={{ xs: "column", md: "row" }}
-        spacing={2}
-        justifyContent="space-between"
+        justifyContent="flex-end"
         alignItems={{ xs: "stretch", md: "center" }}
       >
-        <Box>
-          <Typography variant="h6">Productos</Typography>
-          <Typography variant="body2" color="textSecondary">
-            Gestiona el catalogo base con SKU, imagen, estado comercial y categorias opcionales por producto.
-          </Typography>
-        </Box>
         <Button component={Link} href="/apps/products/new" variant="contained">
           Nuevo producto
         </Button>
       </Stack>
-
-      {successMessage ? <Alert severity="success">{successMessage}</Alert> : null}
 
       {isLoading ? (
         <Stack alignItems="center" py={6} spacing={2}>

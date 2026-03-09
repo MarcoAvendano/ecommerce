@@ -184,6 +184,19 @@ export const updateProductRequestSchema = z.preprocess(
   updateProductSchema,
 );
 
+export const addGroupSchema = z.object({
+  name: z.string().trim().min(1, "Ingresa el nombre del grupo de opciones."),
+  values: z
+    .array(z.object({ value: z.string().trim().min(1, "Ingresa un valor para la opcion.") }))
+    .min(1, "Agrega al menos una opcion."),
+});
+
+export const addValueSchema = z.object({
+  value: z.string().trim().min(1, "Ingresa el valor de la opcion."),
+});
+
+export type AddGroupFormValues = z.infer<typeof addGroupSchema>;
+export type AddValueFormValues = z.infer<typeof addValueSchema>;
 export type CreateCategoryInput = z.infer<typeof createCategorySchema>;
 export type UpdateCategoryInput = z.infer<typeof updateCategorySchema>;
 export type CreateProductInput = z.infer<typeof createProductSchema>;

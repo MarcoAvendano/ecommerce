@@ -3,6 +3,7 @@
 import { Alert, CircularProgress, Stack, Typography } from "@mui/material";
 import { ProductEditorScreen } from "@/features/catalog/components/ProductEditorScreen";
 import { useCatalogBootstrapQuery, useProductDetailQuery } from "@/features/catalog/catalog.queries";
+import Breadcrumb from "@/app/(DashboardLayout)/layout/shared/breadcrumb/Breadcrumb";
 
 interface ProductEditorPageClientProps {
   mode: "create" | "edit";
@@ -17,7 +18,9 @@ export function ProductEditorPageClient({ mode, productId }: ProductEditorPageCl
     return (
       <Stack alignItems="center" py={8} spacing={2}>
         <CircularProgress />
-        <Typography variant="body2" color="textSecondary">Cargando editor de producto...</Typography>
+        <Typography variant="body2" color="textSecondary">
+          Cargando editor de producto...
+        </Typography>
       </Stack>
     );
   }
@@ -35,7 +38,7 @@ export function ProductEditorPageClient({ mode, productId }: ProductEditorPageCl
       mode={mode}
       initialData={{
         bootstrap: bootstrapQuery.data!,
-        product: mode === "edit" ? productQuery.data?.product ?? null : null,
+        product: mode === "edit" ? (productQuery.data?.product ?? null) : null,
       }}
     />
   );

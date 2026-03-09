@@ -66,10 +66,12 @@ export function ProductVariantsManagerPageClient({ productId }: ProductVariantsM
     onSuccess: (result, variables) => {
       setMessage(result.message);
       setOptionGroups(result.optionGroups);
-      setVariants((currentVariants) => currentVariants.map((variant) => ({
-        ...variant,
-        optionSelections: variant.optionSelections.filter((selection) => selection.groupId !== variables.groupId),
-      })));
+      setVariants((currentVariants) =>
+        currentVariants.map((variant) => ({
+          ...variant,
+          optionSelections: variant.optionSelections.filter((selection) => selection.groupId !== variables.groupId),
+        }))
+      );
     },
   });
   const saveVariantMutation = useSaveProductVariantMutation({
@@ -99,18 +101,18 @@ export function ProductVariantsManagerPageClient({ productId }: ProductVariantsM
         initialStockQty: 0,
         isActive: variant.isActive,
         optionSelections: variant.optionSelections,
-      })),
+      }))
     );
   }, [product]);
 
-  const currentVariant = editingVariantIndex !== null ? variants[editingVariantIndex] ?? null : null;
+  const currentVariant = editingVariantIndex !== null ? (variants[editingVariantIndex] ?? null) : null;
   const addValueGroup = useMemo(
     () => optionGroups.find((group) => group.id === addValueGroupId) ?? null,
-    [addValueGroupId, optionGroups],
+    [addValueGroupId, optionGroups]
   );
   const deleteGroup = useMemo(
     () => optionGroups.find((group) => group.id === deleteGroupId) ?? null,
-    [deleteGroupId, optionGroups],
+    [deleteGroupId, optionGroups]
   );
 
   const clearFeedback = () => {
@@ -233,7 +235,9 @@ export function ProductVariantsManagerPageClient({ productId }: ProductVariantsM
     return (
       <Stack alignItems="center" py={8} spacing={2}>
         <CircularProgress />
-        <Typography variant="body2" color="textSecondary">Cargando variantes...</Typography>
+        <Typography variant="body2" color="textSecondary">
+          Cargando variantes...
+        </Typography>
       </Stack>
     );
   }
@@ -265,43 +269,51 @@ export function ProductVariantsManagerPageClient({ productId }: ProductVariantsM
                 </TableRow>
               </TableHead>
               <TableBody>
-                {optionGroups.length > 0 ? optionGroups.map((group) => (
-                  <TableRow key={group.id ?? group.name}>
-                    <TableCell sx={{ fontWeight: 600 }}>{group.name}</TableCell>
-                    <TableCell>
-                      <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                        {group.values.length > 0 ? group.values.map((value) => (
-                          <Chip key={value.id ?? `${group.id}-${value.value}`} label={value.value} />
-                        )) : <Typography variant="body2" color="text.secondary">Sin opciones</Typography>}
-                      </Stack>
-                    </TableCell>
-                    <TableCell align="right">
-                      <Stack direction="row" spacing={1} justifyContent="flex-end">
-                        <Button
-                          variant="text"
-                          startIcon={<IconPlus size={16} />}
-                          onClick={() => {
-                            clearFeedback();
-                            setAddValueGroupId(group.id ?? null);
-                          }}
-                        >
-                          Agregar opcion
-                        </Button>
-                        <Button
-                          color="error"
-                          variant="text"
-                          startIcon={<IconTrash size={16} />}
-                          onClick={() => {
-                            clearFeedback();
-                            setDeleteGroupId(group.id ?? null);
-                          }}
-                        >
-                          Eliminar grupo
-                        </Button>
-                      </Stack>
-                    </TableCell>
-                  </TableRow>
-                )) : (
+                {optionGroups.length > 0 ? (
+                  optionGroups.map((group) => (
+                    <TableRow key={group.id ?? group.name}>
+                      <TableCell sx={{ fontWeight: 600 }}>{group.name}</TableCell>
+                      <TableCell>
+                        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                          {group.values.length > 0 ? (
+                            group.values.map((value) => (
+                              <Chip key={value.id ?? `${group.id}-${value.value}`} label={value.value} />
+                            ))
+                          ) : (
+                            <Typography variant="body2" color="text.secondary">
+                              Sin opciones
+                            </Typography>
+                          )}
+                        </Stack>
+                      </TableCell>
+                      <TableCell align="right">
+                        <Stack direction="row" spacing={1} justifyContent="flex-end">
+                          <Button
+                            variant="text"
+                            startIcon={<IconPlus size={16} />}
+                            onClick={() => {
+                              clearFeedback();
+                              setAddValueGroupId(group.id ?? null);
+                            }}
+                          >
+                            Agregar opcion
+                          </Button>
+                          <Button
+                            color="error"
+                            variant="text"
+                            startIcon={<IconTrash size={16} />}
+                            onClick={() => {
+                              clearFeedback();
+                              setDeleteGroupId(group.id ?? null);
+                            }}
+                          >
+                            Eliminar grupo
+                          </Button>
+                        </Stack>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
                   <TableRow>
                     <TableCell colSpan={3}>
                       <Typography variant="body2" color="text.secondary">
@@ -366,13 +378,20 @@ export function ProductVariantsManagerPageClient({ productId }: ProductVariantsM
                     })}
                     <TableCell align="right">
                       <Stack direction="row" spacing={1} justifyContent="flex-end">
-                        <IconButton onClick={() => {
-                          setEditingVariantIndex(index);
-                          setDrawerOpen(true);
-                        }}>
+                        <IconButton
+                          onClick={() => {
+                            setEditingVariantIndex(index);
+                            setDrawerOpen(true);
+                          }}
+                        >
                           <IconEdit size={18} />
                         </IconButton>
-                        <IconButton color="error" onClick={() => { void removeVariant(variant); }}>
+                        <IconButton
+                          color="error"
+                          onClick={() => {
+                            void removeVariant(variant);
+                          }}
+                        >
                           <IconTrash size={18} />
                         </IconButton>
                       </Stack>
@@ -402,13 +421,16 @@ export function ProductVariantsManagerPageClient({ productId }: ProductVariantsM
             setEditingVariantIndex(null);
           }}
           onSubmit={(value) => {
-            const nextVariant = editingVariantIndex !== null && variants[editingVariantIndex]
-              ? { ...value, id: variants[editingVariantIndex]?.id }
-              : value;
+            const nextVariant =
+              editingVariantIndex !== null && variants[editingVariantIndex]
+                ? { ...value, id: variants[editingVariantIndex]?.id }
+                : value;
 
-            setVariants((currentVariants) => editingVariantIndex !== null
-              ? currentVariants.map((variant, index) => (index === editingVariantIndex ? nextVariant : variant))
-              : [...currentVariants, nextVariant]);
+            setVariants((currentVariants) =>
+              editingVariantIndex !== null
+                ? currentVariants.map((variant, index) => (index === editingVariantIndex ? nextVariant : variant))
+                : [...currentVariants, nextVariant]
+            );
             setDrawerOpen(false);
             setEditingVariantIndex(null);
             void persistVariant(nextVariant);

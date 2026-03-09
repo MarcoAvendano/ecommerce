@@ -1,16 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import {
-  Alert,
-  Box,
-  Button,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Stack,
-  Typography,
-} from "@mui/material";
+import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Stack, Typography } from "@mui/material";
 import { Controller, useFieldArray, useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { IconPlus, IconTrash } from "@tabler/icons-react";
@@ -19,18 +10,8 @@ import CustomTextField from "@/app/components/forms/theme-elements/CustomTextFie
 import { ResponsiveDrawer } from "@/app/components/ui-components/drawer/ResponsiveDrawer";
 import type { ProductOptionGroupItem } from "@/features/catalog/catalog.types";
 import { z } from "zod";
-
-const addGroupSchema = z.object({
-  name: z.string().trim().min(1, "Ingresa el nombre del grupo de opciones."),
-  values: z.array(z.object({ value: z.string().trim().min(1, "Ingresa un valor para la opcion.") })).min(1, "Agrega al menos una opcion."),
-});
-
-const addValueSchema = z.object({
-  value: z.string().trim().min(1, "Ingresa el valor de la opcion."),
-});
-
-type AddGroupFormValues = z.infer<typeof addGroupSchema>;
-type AddValueFormValues = z.infer<typeof addValueSchema>;
+import AlertDialog from "@/app/components/ui-components/dialog/AlertDialog";
+import { AddGroupFormValues, addGroupSchema, AddValueFormValues, addValueSchema } from "../schemas";
 
 const addGroupDefaultValues: AddGroupFormValues = {
   name: "",
@@ -86,12 +67,16 @@ export function ProductOptionGroupCreateDialog({
   return (
     <ResponsiveDrawer open={open} onClose={handleClose} sx={{ width: "100%", maxWidth: 520 }}>
       <DialogTitle>Agregar grupo de opciones</DialogTitle>
-      <Box component="form" onSubmit={handleSubmit(async (values) => {
-        await onSubmit({
-          name: values.name.trim(),
-          values: values.values.map((item) => ({ value: item.value.trim() })),
-        });
-      })} noValidate>
+      <Box
+        component="form"
+        onSubmit={handleSubmit(async (values) => {
+          await onSubmit({
+            name: values.name.trim(),
+            values: values.values.map((item) => ({ value: item.value.trim() })),
+          });
+        })}
+        noValidate
+      >
         <DialogContent dividers>
           <Stack spacing={2}>
             {errorMessage ? <Alert severity="error">{errorMessage}</Alert> : null}
@@ -116,7 +101,9 @@ export function ProductOptionGroupCreateDialog({
 
             <Stack spacing={1.5}>
               <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <Typography variant="subtitle1" fontWeight={700}>Opciones</Typography>
+                <Typography variant="subtitle1" fontWeight={700}>
+                  Opciones
+                </Typography>
                 <Button
                   type="button"
                   variant="text"
@@ -159,14 +146,20 @@ export function ProductOptionGroupCreateDialog({
               ))}
 
               {typeof errors.values?.message === "string" ? (
-                <Typography variant="caption" color="error.main">{errors.values.message}</Typography>
+                <Typography variant="caption" color="error.main">
+                  {errors.values.message}
+                </Typography>
               ) : null}
             </Stack>
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleClose} color="inherit" disabled={isPending}>Cancelar</Button>
-          <Button type="submit" variant="contained" disabled={isPending}>Crear grupo</Button>
+          <Button onClick={handleClose} color="inherit" disabled={isPending}>
+            Cancelar
+          </Button>
+          <Button type="submit" variant="contained" disabled={isPending}>
+            Crear grupo
+          </Button>
         </DialogActions>
       </Box>
     </ResponsiveDrawer>
@@ -214,16 +207,20 @@ export function ProductOptionGroupValueDialog({
   };
 
   return (
-    <ResponsiveDrawer open={open} onClose={handleClose} sx={{ width: "100%", maxWidth: 420 }}>
+    <Dialog open={open} onClose={handleClose} maxWidth="xs" fullWidth>
       <DialogTitle>Agregar opcion</DialogTitle>
-      <Box component="form" onSubmit={handleSubmit(async (values) => {
-        await onSubmit({ value: values.value.trim() });
-      })} noValidate>
+      <Box
+        component="form"
+        onSubmit={handleSubmit(async (values) => {
+          await onSubmit({ value: values.value.trim() });
+        })}
+        noValidate
+      >
         <DialogContent dividers>
           <Stack spacing={2}>
             {errorMessage ? <Alert severity="error">{errorMessage}</Alert> : null}
             {group ? (
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body1" color="text.secondary">
                 Grupo: <strong>{group.name}</strong>
               </Typography>
             ) : null}
@@ -238,6 +235,7 @@ export function ProductOptionGroupValueDialog({
                     id="option-group-value"
                     fullWidth
                     size="small"
+                    placeholder="Ej: Rojo, Grande, Cuero, etc."
                     error={Boolean(errors.value)}
                     helperText={errors.value?.message}
                   />
@@ -247,11 +245,15 @@ export function ProductOptionGroupValueDialog({
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleClose} color="inherit" disabled={isPending}>Cancelar</Button>
-          <Button type="submit" variant="contained" disabled={isPending}>Agregar</Button>
+          <Button onClick={handleClose} color="inherit" disabled={isPending}>
+            Cancelar
+          </Button>
+          <Button type="submit" variant="contained" disabled={isPending}>
+            Agregar
+          </Button>
         </DialogActions>
       </Box>
-    </ResponsiveDrawer>
+    </Dialog>
   );
 }
 
@@ -273,8 +275,16 @@ export function ProductOptionGroupDeleteDialog({
   errorMessage,
 }: ProductOptionGroupDeleteDialogProps) {
   return (
-    <ResponsiveDrawer open={open} onClose={onClose} sx={{ width: "100%", maxWidth: 460 }}>
-      <DialogTitle>Eliminar grupo de opciones</DialogTitle>
+    <AlertDialog
+      open={open}
+      onClose={onClose}
+      title="Eliminar grupo de opciones"
+      onConfirm={onConfirm}
+      confirmText="Eliminar grupo"
+      isPending={isPending}
+      fullWidth
+      maxWidth="xs"
+    >
       <DialogContent dividers>
         <Stack spacing={2}>
           {errorMessage ? <Alert severity="error">{errorMessage}</Alert> : null}
@@ -284,16 +294,11 @@ export function ProductOptionGroupDeleteDialog({
               : "Si eliminas este grupo, las variantes que tengan valores asignados perderan esa relacion."}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Esta accion no edita otros grupos, pero si limpia las selecciones asociadas a este grupo en las variantes existentes.
+            Esta accion no edita otros grupos, pero si limpia las selecciones asociadas a este grupo en las variantes
+            existentes.
           </Typography>
         </Stack>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} color="inherit" disabled={isPending}>Cancelar</Button>
-        <Button onClick={() => void onConfirm()} color="error" variant="contained" disabled={isPending}>
-          Eliminar grupo
-        </Button>
-      </DialogActions>
-    </ResponsiveDrawer>
+    </AlertDialog>
   );
 }

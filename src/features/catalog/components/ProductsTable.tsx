@@ -27,7 +27,7 @@ interface ProductsTableProps {
   products: ProductListItem[];
 }
 
-type ProductHeadCellId = "name" | "createdAt" | "status" | "baseUnit";
+type ProductHeadCellId = "name" | "createdAt" | "status" | "slug";
 
 interface ProductHeadCell {
   id: ProductHeadCellId;
@@ -39,7 +39,7 @@ const productHeadCells: readonly ProductHeadCell[] = [
   { id: "name", label: "Producto", sortable: true },
   { id: "createdAt", label: "Fecha", sortable: true },
   { id: "status", label: "Estado", sortable: true },
-  { id: "baseUnit", label: "Unidad", sortable: true },
+  { id: "slug", label: "Slug", sortable: false },
 ];
 
 function getStatusColor(status: ProductListItem["status"]) {
@@ -72,8 +72,8 @@ function getProductSortValue(orderBy: ProductHeadCellId, product: ProductListIte
       return product.createdAt;
     case "status":
       return getStatusLabel(product.status);
-    case "baseUnit":
-      return product.baseUnit;
+    case "slug":
+      return product.slug;
     case "name":
     default:
       return product.name;
@@ -89,6 +89,7 @@ export function ProductsTable({ products }: ProductsTableProps) {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | ProductListItem["status"]>("all");
+
 
   const filteredProducts = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
@@ -108,7 +109,7 @@ export function ProductsTable({ products }: ProductsTableProps) {
         product.name,
         product.slug,
         product.sku,
-        product.baseUnit,
+        product.slug,
         product.categories.map((category) => category.name).join(" "),
       ]
         .join(" ")
@@ -245,9 +246,7 @@ export function ProductsTable({ products }: ProductsTableProps) {
                     </Box>
                   </TableCell>
                   <TableCell>
-                    <Typography fontWeight={600} variant="h6">
-                      {product.baseUnit}
-                    </Typography>
+                    <Typography>{product.slug}</Typography>
                   </TableCell>
                 </TableRow>
               ))}

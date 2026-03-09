@@ -98,31 +98,6 @@ async function requireCatalogRequest() {
   return { authContext };
 }
 
-async function validateCategoryIds(
-  adminClient: ReturnType<typeof createAdminClient>,
-  categoryIds: string[],
-) {
-  if (categoryIds.length === 0) {
-    return null;
-  }
-
-  const { data: categories, error } = await adminClient
-    .from("categories")
-    .select("id")
-    .in("id", categoryIds);
-
-  if (error || (categories?.length ?? 0) !== categoryIds.length) {
-    return NextResponse.json(
-      {
-        message: error?.message ?? "Selecciona categorias validas para el producto.",
-      },
-      { status: 400 },
-    );
-  }
-
-  return null;
-}
-
 async function syncProductCategories(
   adminClient: ReturnType<typeof createAdminClient>,
   productId: string,
@@ -481,12 +456,6 @@ export async function POST(request: Request) {
     brandId,
   } = parsedPayload.data;
 
-  const categoryValidationError = await validateCategoryIds(adminClient, categoryIds);
-
-  if (categoryValidationError) {
-    return categoryValidationError;
-  }
-
   const { data: createdProduct, error: createProductError } = await adminClient
     .from("products")
     .insert({
@@ -517,16 +486,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ message }, { status: statusCode });
   }
 
-  const relationsError = await syncProductCategories(adminClient, createdProduct.id, categoryIds);
-
-  if (relationsError) {
-    await adminClient.from("products").delete().eq("id", createdProduct.id);
-
-    return NextResponse.json(
-      { message: relationsError.message ?? "No se pudieron guardar las categorias del producto." },
-      { status: 500 },
-    );
+  if (categoryIds.length > 0) {
+    const relationsError = await syncProductCategories(adminClient, createdProduct.id, categoryIds);
+  
+    if (relationsError) {
+      await adminClient.from("products").delete().eq("id", createdProduct.id);
+  
+      return NextResponse.json(
+        { message: relationsError.message ?? "No se pudieron guardar las categorias del producto." },
+        { status: 500 },
+      );
+    }
   }
+
 
   const initialInventoryError = await createInitialInventoryLoad(
     adminClient,
@@ -608,12 +580,6 @@ export async function PUT(request: Request) {
 
   if (!existingProduct) {
     return NextResponse.json({ message: "Producto no encontrado." }, { status: 404 });
-  }
-
-  const categoryValidationError = await validateCategoryIds(adminClient, categoryIds);
-
-  if (categoryValidationError) {
-    return categoryValidationError;
   }
 
   const { data: updatedProduct, error: updateProductError } = await adminClient

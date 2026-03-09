@@ -1,56 +1,53 @@
-import React from 'react';
-import {
-  Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
-} from '@mui/material';
-import useMediaQuery from '@mui/material/useMediaQuery';
-import { useTheme } from '@mui/material/styles';
+import React from "react";
+import { Button, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from "@mui/material";
+import useMediaQuery from "@mui/material/useMediaQuery";
+import { useTheme } from "@mui/material/styles";
 
-const ResponsiveDialog = () => {
-  const [open, setOpen] = React.useState(false);
+interface ResponsiveDialogProps {
+  open: boolean;
+  onClose: () => void;
+  onConfirm?: () => void;
+  title: string;
+  children?: React.ReactNode;
+  isPending?: boolean;
+  confirmText?: string;
+  cancelText?: string;
+  confirmButtonType?: "reset" | "button" | "submit";
+}
+
+const ResponsiveDialog: React.FC<ResponsiveDialogProps> = ({
+  open,
+  onClose,
+  onConfirm,
+  title,
+  children,
+  isPending = false,
+  confirmText = "Agree",
+  cancelText = "Disagree",
+  confirmButtonType = "button",
+}) => {
   const theme = useTheme();
-  const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
-
-  const handleClickOpen = () => {
-    setOpen(true);
-  };
-
-  const handleClose = () => {
-    setOpen(false);
-  };
+  const fullScreen = useMediaQuery(theme.breakpoints.down("md"));
 
   return (
-    <>
-      <Button variant="contained" color="warning" fullWidth onClick={handleClickOpen}>
-        Open Responsive Dialog
-      </Button>
-      <Dialog
-        fullScreen={fullScreen}
-        open={open}
-        onClose={handleClose}
-        aria-labelledby="responsive-dialog-title"
-      >
-        <DialogTitle id="responsive-dialog-title">{"Use Google's location service?"}</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Let Google help apps determine location. This means sending anonymous location data to
-            Google, even when no apps are running.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button autoFocus onClick={handleClose}>
-            Disagree
-          </Button>
-          <Button onClick={handleClose} autoFocus>
-            Agree
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </>
+    <Dialog fullScreen={fullScreen} open={open} onClose={onClose} aria-labelledby="responsive-dialog-title">
+      <DialogTitle id="responsive-dialog-title">{title}</DialogTitle>
+      <DialogContent>{children}</DialogContent>
+      <DialogActions>
+        <Button autoFocus onClick={onClose} disabled={isPending} variant="text">
+          {cancelText}
+        </Button>
+        <Button
+          type={confirmButtonType}
+          onClick={onConfirm || onClose}
+          autoFocus
+          disabled={isPending}
+          variant="contained"
+        >
+          {confirmText}
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 };
 
