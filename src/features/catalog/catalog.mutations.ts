@@ -1,9 +1,11 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
+  addProductOptionGroupValue,
   createCategory,
+  createProductOptionGroup,
   createProduct,
+  deleteProductOptionGroup,
   deleteProductVariant,
-  saveProductOptionGroups,
   saveProductVariant,
   updateCategory,
   updateProduct,
@@ -14,7 +16,8 @@ import {
   productsQueryKey,
 } from "@/features/catalog/catalog.queries";
 import type {
-  SaveProductOptionGroupsPayload,
+  AddProductOptionGroupValuePayload,
+  CreateProductOptionGroupPayload,
   SaveProductVariantPayload,
 } from "@/features/catalog/catalog.types";
 import type {
@@ -40,8 +43,16 @@ interface UpdateProductMutationOptions {
   onSuccess?: (data: Awaited<ReturnType<typeof updateProduct>>, variables: UpdateProductInput) => void;
 }
 
-interface SaveProductOptionGroupsMutationOptions {
-  onSuccess?: (data: Awaited<ReturnType<typeof saveProductOptionGroups>>, variables: { productId: string; input: SaveProductOptionGroupsPayload }) => void;
+interface CreateProductOptionGroupMutationOptions {
+  onSuccess?: (data: Awaited<ReturnType<typeof createProductOptionGroup>>, variables: { productId: string; input: CreateProductOptionGroupPayload }) => void;
+}
+
+interface AddProductOptionGroupValueMutationOptions {
+  onSuccess?: (data: Awaited<ReturnType<typeof addProductOptionGroupValue>>, variables: { productId: string; groupId: string; input: AddProductOptionGroupValuePayload }) => void;
+}
+
+interface DeleteProductOptionGroupMutationOptions {
+  onSuccess?: (data: Awaited<ReturnType<typeof deleteProductOptionGroup>>, variables: { productId: string; groupId: string }) => void;
 }
 
 interface SaveProductVariantMutationOptions {
@@ -106,12 +117,38 @@ export function useUpdateProductMutation(options?: UpdateProductMutationOptions)
   });
 }
 
-export function useSaveProductOptionGroupsMutation(options?: SaveProductOptionGroupsMutationOptions) {
+export function useCreateProductOptionGroupMutation(options?: CreateProductOptionGroupMutationOptions) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ productId, input }: { productId: string; input: SaveProductOptionGroupsPayload }) =>
-      saveProductOptionGroups(productId, input),
+    mutationFn: ({ productId, input }: { productId: string; input: CreateProductOptionGroupPayload }) =>
+      createProductOptionGroup(productId, input),
+    onSuccess: async (data, variables) => {
+      await queryClient.invalidateQueries({ queryKey: productDetailQueryKey(variables.productId) });
+      options?.onSuccess?.(data, variables);
+    },
+  });
+}
+
+export function useAddProductOptionGroupValueMutation(options?: AddProductOptionGroupValueMutationOptions) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ productId, groupId, input }: { productId: string; groupId: string; input: AddProductOptionGroupValuePayload }) =>
+      addProductOptionGroupValue(productId, groupId, input),
+    onSuccess: async (data, variables) => {
+      await queryClient.invalidateQueries({ queryKey: productDetailQueryKey(variables.productId) });
+      options?.onSuccess?.(data, variables);
+    },
+  });
+}
+
+export function useDeleteProductOptionGroupMutation(options?: DeleteProductOptionGroupMutationOptions) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ productId, groupId }: { productId: string; groupId: string }) =>
+      deleteProductOptionGroup(productId, groupId),
     onSuccess: async (data, variables) => {
       await queryClient.invalidateQueries({ queryKey: productDetailQueryKey(variables.productId) });
       options?.onSuccess?.(data, variables);

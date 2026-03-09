@@ -163,22 +163,20 @@ export interface UploadProductImageResponse {
   publicUrl: string;
 }
 
-export interface SaveProductOptionGroupsPayload {
-  optionGroups: Array<{
-    id?: string;
-    name: string;
-    sortOrder: number;
-    values: Array<{
-      id?: string;
-      value: string;
-      sortOrder: number;
-    }>;
+export interface ProductOptionGroupsResponse {
+  message: string;
+  optionGroups: ProductOptionGroupItem[];
+}
+
+export interface CreateProductOptionGroupPayload {
+  name: string;
+  values: Array<{
+    value: string;
   }>;
 }
 
-export interface SaveProductOptionGroupsResponse {
-  message: string;
-  optionGroups: ProductOptionGroupItem[];
+export interface AddProductOptionGroupValuePayload {
+  value: string;
 }
 
 export interface SaveProductVariantPayload {

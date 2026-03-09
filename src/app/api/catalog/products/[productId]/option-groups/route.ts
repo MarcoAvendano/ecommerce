@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { getAuthContext, hasAnyRole } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import {
+  getNextOptionGroupSortOrder,
+  hasOptionGroupNameConflict,
+  loadProductOptionGroups,
+} from "@/features/catalog/product-option-groups.server";
 
 async function requireCatalogRequest() {
   const authContext = await getAuthContext();
@@ -22,131 +27,31 @@ async function requireCatalogRequest() {
   return { authContext };
 }
 
-async function syncProductOptionGroups(
-  adminClient: ReturnType<typeof createAdminClient>,
-  productId: string,
-  optionGroups: Array<{
-    id?: string;
-    name: string;
-    sortOrder: number;
-    values: Array<{
-      id?: string;
-      value: string;
-      sortOrder: number;
-    }>;
-  }>,
+export async function GET(
+  _request: Request,
+  context: { params: Promise<{ productId: string }> },
 ) {
-  const { data: existingGroups, error: existingGroupsError } = await adminClient
-    .from("product_option_groups")
-    .select("id")
-    .eq("product_id", productId);
+  const catalogRequest = await requireCatalogRequest();
 
-  if (existingGroupsError) {
-    return { error: existingGroupsError, optionGroups: [] };
+  if (catalogRequest.error) {
+    return catalogRequest.error;
   }
 
-  const existingGroupIds = (existingGroups ?? []).map((group) => group.id);
+  const { productId } = await context.params;
+  const adminClient = createAdminClient();
+  const result = await loadProductOptionGroups(adminClient, productId);
 
-  if (existingGroupIds.length > 0) {
-    const { error: deleteSelectionsError } = await adminClient
-      .from("product_variant_option_values")
-      .delete()
-      .in("option_group_id", existingGroupIds);
-
-    if (deleteSelectionsError) {
-      return { error: deleteSelectionsError, optionGroups: [] };
-    }
-
-    const { error: deleteValuesError } = await adminClient
-      .from("product_option_group_values")
-      .delete()
-      .in("option_group_id", existingGroupIds);
-
-    if (deleteValuesError) {
-      return { error: deleteValuesError, optionGroups: [] };
-    }
+  if (result.error) {
+    return NextResponse.json(
+      { message: result.error.message ?? "No se pudieron cargar los grupos de opciones." },
+      { status: 500 },
+    );
   }
 
-  const { error: deleteGroupsError } = await adminClient
-    .from("product_option_groups")
-    .delete()
-    .eq("product_id", productId);
-
-  if (deleteGroupsError) {
-    return { error: deleteGroupsError, optionGroups: [] };
-  }
-
-  if (optionGroups.length === 0) {
-    return { error: null, optionGroups: [] };
-  }
-
-  const { data: insertedGroups, error: insertGroupsError } = await adminClient
-    .from("product_option_groups")
-    .insert(
-      optionGroups.map((group) => ({
-        product_id: productId,
-        name: group.name,
-        sort_order: group.sortOrder,
-      })),
-    )
-    .select("id, product_id, name, sort_order");
-
-  if (insertGroupsError) {
-    return { error: insertGroupsError, optionGroups: [] };
-  }
-
-  const groupIdByName = new Map((insertedGroups ?? []).map((group) => [group.name, group.id]));
-  const valuesPayload = optionGroups.flatMap((group) => {
-    const optionGroupId = groupIdByName.get(group.name);
-
-    if (!optionGroupId) {
-      return [];
-    }
-
-    return group.values.map((value) => ({
-      option_group_id: optionGroupId,
-      value: value.value,
-      sort_order: value.sortOrder,
-    }));
-  });
-
-  const insertedValues = valuesPayload.length > 0
-    ? await adminClient
-        .from("product_option_group_values")
-        .insert(valuesPayload)
-        .select("id, option_group_id, value, sort_order")
-    : { data: [], error: null };
-
-  if (insertedValues.error) {
-    return { error: insertedValues.error, optionGroups: [] };
-  }
-
-  const valuesByGroupId = new Map<string, Array<{ id: string; optionGroupId: string; value: string; sortOrder: number }>>();
-
-  for (const value of insertedValues.data ?? []) {
-    const currentValues = valuesByGroupId.get(value.option_group_id) ?? [];
-    currentValues.push({
-      id: value.id,
-      optionGroupId: value.option_group_id,
-      value: value.value,
-      sortOrder: value.sort_order,
-    });
-    valuesByGroupId.set(value.option_group_id, currentValues);
-  }
-
-  return {
-    error: null,
-    optionGroups: (insertedGroups ?? []).map((group) => ({
-      id: group.id,
-      productId: group.product_id,
-      name: group.name,
-      sortOrder: group.sort_order,
-      values: valuesByGroupId.get(group.id) ?? [],
-    })),
-  };
+  return NextResponse.json({ optionGroups: result.optionGroups });
 }
 
-export async function PUT(
+export async function POST(
   request: Request,
   context: { params: Promise<{ productId: string }> },
 ) {
@@ -158,26 +63,97 @@ export async function PUT(
 
   const { productId } = await context.params;
   const payload = (await request.json()) as {
-    optionGroups: Array<{
-      id?: string;
-      name: string;
-      sortOrder: number;
-      values: Array<{ id?: string; value: string; sortOrder: number }>;
-    }>;
+    name?: string;
+    values?: Array<{ value?: string }>;
   };
 
+  const name = payload.name?.trim() ?? "";
+  const nextValues = (payload.values ?? [])
+    .map((item) => item.value?.trim() ?? "")
+    .filter(Boolean);
+
+  if (!name) {
+    return NextResponse.json({ message: "Ingresa el nombre del grupo de opciones." }, { status: 400 });
+  }
+
+  if (nextValues.length === 0) {
+    return NextResponse.json({ message: "Agrega al menos una opcion para el grupo." }, { status: 400 });
+  }
+
+  const normalizedValues = Array.from(new Set(nextValues.map((value) => value.toLocaleLowerCase())));
+
+  if (normalizedValues.length !== nextValues.length) {
+    return NextResponse.json({ message: "No repitas opciones dentro del mismo grupo." }, { status: 400 });
+  }
+
   const adminClient = createAdminClient();
-  const result = await syncProductOptionGroups(adminClient, productId, payload.optionGroups ?? []);
+  const nameConflict = await hasOptionGroupNameConflict(adminClient, productId, name);
+
+  if (nameConflict.error) {
+    return NextResponse.json(
+      { message: nameConflict.error.message ?? "No se pudieron validar los grupos de opciones." },
+      { status: 500 },
+    );
+  }
+
+  if (nameConflict.conflict) {
+    return NextResponse.json({ message: "Ya existe un grupo con ese nombre." }, { status: 409 });
+  }
+
+  const sortOrderResult = await getNextOptionGroupSortOrder(adminClient, productId);
+
+  if (sortOrderResult.error) {
+    return NextResponse.json(
+      { message: sortOrderResult.error.message ?? "No se pudo calcular el orden del grupo." },
+      { status: 500 },
+    );
+  }
+
+  const { data: insertedGroup, error: insertGroupError } = await adminClient
+    .from("product_option_groups")
+    .insert({
+      product_id: productId,
+      name,
+      sort_order: sortOrderResult.sortOrder,
+    })
+    .select("id")
+    .single();
+
+  if (insertGroupError || !insertedGroup) {
+    return NextResponse.json(
+      { message: insertGroupError?.message ?? "No se pudo crear el grupo de opciones." },
+      { status: 500 },
+    );
+  }
+
+  const valuesPayload = nextValues.map((value, index) => ({
+    option_group_id: insertedGroup.id,
+    value,
+    sort_order: index,
+  }));
+
+  const { error: insertValuesError } = await adminClient
+    .from("product_option_group_values")
+    .insert(valuesPayload);
+
+  if (insertValuesError) {
+    return NextResponse.json(
+      { message: insertValuesError.message ?? "No se pudieron crear las opciones del grupo." },
+      { status: 500 },
+    );
+  }
+
+  const result = await loadProductOptionGroups(adminClient, productId);
 
   if (result.error) {
     return NextResponse.json(
-      { message: result.error.message ?? "No se pudieron guardar los grupos de opciones." },
+      { message: result.error.message ?? "No se pudieron cargar los grupos actualizados." },
       { status: 500 },
     );
   }
 
   return NextResponse.json({
-    message: "Grupos de opciones actualizados correctamente.",
+    message: "Grupo de opciones creado correctamente.",
     optionGroups: result.optionGroups,
   });
 }

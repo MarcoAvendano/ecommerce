@@ -1,15 +1,16 @@
 import type {
+  AddProductOptionGroupValuePayload,
   CategoriesListResponse,
+  CreateProductOptionGroupPayload,
   CreateCategoryResponse,
   CreateProductResponse,
+  DeleteProductVariantResponse,
   InventoryLocationOption,
   ProductEditorBootstrapResponse,
   ProductListItem,
-  SaveProductOptionGroupsPayload,
-  SaveProductOptionGroupsResponse,
+  ProductOptionGroupsResponse,
   SaveProductVariantPayload,
   SaveProductVariantResponse,
-  DeleteProductVariantResponse,
   UpdateCategoryResponse,
   UpdateProductResponse,
   UploadProductImageResponse,
@@ -108,19 +109,49 @@ export async function getProductEditorBootstrap(): Promise<ProductEditorBootstra
   return parseApiResponse<ProductEditorBootstrapResponse>(response);
 }
 
-export async function saveProductOptionGroups(
+export async function createProductOptionGroup(
   productId: string,
-  input: SaveProductOptionGroupsPayload,
-): Promise<SaveProductOptionGroupsResponse> {
+  input: CreateProductOptionGroupPayload,
+): Promise<ProductOptionGroupsResponse> {
   const response = await fetch(`/api/catalog/products/${productId}/option-groups`, {
-    method: "PUT",
+    method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(input),
   });
 
-  return parseApiResponse<SaveProductOptionGroupsResponse>(response);
+  return parseApiResponse<ProductOptionGroupsResponse>(response);
+}
+
+export async function addProductOptionGroupValue(
+  productId: string,
+  groupId: string,
+  input: AddProductOptionGroupValuePayload,
+): Promise<ProductOptionGroupsResponse> {
+  const response = await fetch(`/api/catalog/products/${productId}/option-groups/${groupId}/values`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(input),
+  });
+
+  return parseApiResponse<ProductOptionGroupsResponse>(response);
+}
+
+export async function deleteProductOptionGroup(
+  productId: string,
+  groupId: string,
+): Promise<ProductOptionGroupsResponse> {
+  const response = await fetch(`/api/catalog/products/${productId}/option-groups/${groupId}`, {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  return parseApiResponse<ProductOptionGroupsResponse>(response);
 }
 
 export async function saveProductVariant(

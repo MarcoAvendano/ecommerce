@@ -71,21 +71,30 @@ async function persistVariantSelections(
     valueIdByGroupAndValue: Map<string, string>;
   },
 ) {
-  const normalizedSelections = optionSelections.flatMap((selection) => {
+  const normalizedSelectionsMap = new Map<string, {
+    groupId: string;
+    groupName: string;
+    valueId: string;
+    value: string;
+  }>();
+
+  for (const selection of optionSelections) {
     const optionGroupId = selectionMaps.groupIdByName.get(selection.groupName) ?? selection.groupId;
     const optionGroupValueId = selectionMaps.valueIdByGroupAndValue.get(`${optionGroupId}:${selection.value}`) ?? selection.valueId;
 
     if (!optionGroupId || !optionGroupValueId) {
-      return [];
+      continue;
     }
 
-    return [{
+    normalizedSelectionsMap.set(optionGroupId, {
       groupId: optionGroupId,
       groupName: selection.groupName,
       valueId: optionGroupValueId,
       value: selection.value,
-    }];
-  });
+    });
+  }
+
+  const normalizedSelections = Array.from(normalizedSelectionsMap.values());
 
   const { error: deleteSelectionsError } = await adminClient
     .from("product_variant_option_values")
