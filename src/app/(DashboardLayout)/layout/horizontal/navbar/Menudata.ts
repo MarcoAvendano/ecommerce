@@ -198,9 +198,9 @@ const Menuitems = [
       },
       {
         id: uniqueId(),
-        title: 'Account Setting',
+        title: 'Configuración',
         icon: IconPoint,
-        href: '/theme-pages/account-settings',
+        href: '/settings',
       },
       {
         id: uniqueId(),

@@ -42,7 +42,7 @@ const noopStorage: StateStorage = {
 };
 
 const initialState = {
-  activeDir: "rtl" as ThemeDirection,
+  activeDir: "ltr" as ThemeDirection,
   activeMode: "light" as ThemeMode,
   activeTheme: "BLUE_THEME",
   SidebarWidth: 270,

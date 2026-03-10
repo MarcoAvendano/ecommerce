@@ -168,9 +168,9 @@ const Menuitems: MenuitemsType[] = [
   },
   {
     id: uniqueId(),
-    title: "Account Setting",
+    title: "Configuración",
     icon: IconSettings,
-    href: "/theme-pages/account-settings",
+    href: "/settings",
   },
 ];
 
