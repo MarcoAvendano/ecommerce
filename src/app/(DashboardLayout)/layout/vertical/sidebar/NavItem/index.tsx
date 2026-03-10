@@ -100,7 +100,7 @@ export default function NavItem({
       <Link href={item.href}>
         <ListItemStyled
           disabled={item?.disabled}
-          selected={pathDirect === item?.href}
+          selected={pathDirect.includes(item?.href)}
           onClick={lgDown ? onClick : undefined}
         >
           <ListItemIcon
