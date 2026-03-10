@@ -22,7 +22,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { Controller, useFieldArray, useForm, type Resolver } from "react-hook-form";
+import { Controller, useFieldArray, useForm, useWatch, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { IconPlus, IconTrash } from "@tabler/icons-react";
 import CustomFormLabel from "@/app/components/forms/theme-elements/CustomFormLabel";
@@ -65,8 +65,8 @@ export function SalesOrderCreateForm() {
   });
 
   const locationId = watch("locationId");
-  const items = watch("items");
-  const orderDiscountDollars = watch("discountDollars");
+  const items = useWatch({ control, name: "items" });
+  const orderDiscountDollars = useWatch({ control, name: "discountDollars" });
   const customerId = watch("customerId");
   const requiresShipping = watch("requiresShipping");
 
