@@ -3,6 +3,7 @@ import { getAuthContext, hasAnyRole } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createSalesOrderSchema } from "@/features/sales/schemas";
 import type { CreateSalesOrderResponse } from "@/features/sales/sales.types";
+import { map } from 'lodash';
 
 async function requireSalesRequest() {
   const authContext = await getAuthContext();
@@ -22,6 +23,16 @@ async function requireSalesRequest() {
   }
 
   return { authContext };
+}
+
+async function loadSalesOrders(adminClient: ReturnType<typeof createAdminClient>) {
+  return Promise.resolve(
+    adminClient
+      .from("orders")
+      .select("id, order_number, total_cents, status, created_at")
+      .order("created_at",
+        { ascending: false })
+  )
 }
 
 export async function POST(request: Request) {
@@ -97,4 +108,34 @@ export async function POST(request: Request) {
   };
 
   return NextResponse.json(responseBody, { status: 201 });
+}
+
+export async function GET() {
+  const salesRequest = await requireSalesRequest();
+
+  if (salesRequest.error) {
+    return salesRequest.error;
+  }
+
+  const adminClient = createAdminClient();
+  const { data: rows, error } = await loadSalesOrders(adminClient);
+  
+  if (error || !rows) {
+    return NextResponse.json(
+      { message: error?.message ?? "No se pudieron cargar las órdenes." },
+      { status: 500 },
+    );
+  }
+
+  const responseBody = {
+    sales: map(rows, (row) => ({
+      id: row.id,
+      orderNumber: row.order_number,
+      totalCents: row.total_cents,
+      status: row.status,
+      createdAt: row.created_at,
+    })),
+  }
+
+  return NextResponse.json(responseBody);
 }

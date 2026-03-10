@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createSalesOrder } from "@/features/sales/sales.api";
-import { salesCreateContextQueryKey } from "@/features/sales/sales.queries";
+import { salesCreateContextQueryKey, salesQueryKey } from "@/features/sales/sales.queries";
 import type { CreateSalesOrderInput } from "@/features/sales/schemas";
 
 interface CreateSalesOrderMutationOptions {
@@ -13,7 +13,10 @@ export function useCreateSalesOrderMutation(options?: CreateSalesOrderMutationOp
   return useMutation({
     mutationFn: createSalesOrder,
     onSuccess: async (data, variables) => {
-      await queryClient.invalidateQueries({ queryKey: salesCreateContextQueryKey });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: salesCreateContextQueryKey }),
+        queryClient.invalidateQueries({ queryKey: salesQueryKey }),
+      ]);
       options?.onSuccess?.(data, variables);
     },
   });

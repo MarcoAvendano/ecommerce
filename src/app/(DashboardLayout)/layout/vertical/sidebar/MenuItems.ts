@@ -114,7 +114,19 @@ const Menuitems: MenuitemsType[] = [
     icon: IconShoppingCart,
     // chip: "2",
     chipColor: "secondary",
-    href: "/apps/sales",
+    href: "/apps/sales/",
+    children: [{
+      id: uniqueId(),
+      title: "Lista",
+      icon: IconPoint,
+      href: "/apps/sales/list",
+    },
+    {
+      id: uniqueId(),
+      title: 'Crear',
+      icon: IconPoint,
+      href: "/apps/sales/new",
+    }]
   },
   {
     id: uniqueId(),

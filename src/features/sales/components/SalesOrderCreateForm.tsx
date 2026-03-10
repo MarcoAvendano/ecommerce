@@ -26,6 +26,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { IconPlus, IconTrash } from "@tabler/icons-react";
 import CustomFormLabel from "@/app/components/forms/theme-elements/CustomFormLabel";
 import CustomTextField from "@/app/components/forms/theme-elements/CustomTextField";
+import { formatSalesCurrency } from "@/features/sales/sales.formatters";
 import { useCreateSalesOrderMutation } from "@/features/sales/sales.mutations";
 import { useSalesCreateContextQuery } from "@/features/sales/sales.queries";
 import {
@@ -40,13 +41,6 @@ const defaultValues: CreateSalesOrderInput = {
   discountCents: 0,
   items: [],
 };
-
-function formatCurrency(cents: number) {
-  return new Intl.NumberFormat("es-MX", {
-    style: "currency",
-    currency: "MXN",
-  }).format(cents / 100);
-}
 
 export function SalesOrderCreateForm() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -401,7 +395,7 @@ export function SalesOrderCreateForm() {
                               />
                             </TableCell>
                             <TableCell>
-                              <Typography fontWeight={700}>{formatCurrency(lineSubtotal || 0)}</Typography>
+                              <Typography fontWeight={700}>{formatSalesCurrency(lineSubtotal || 0)}</Typography>
                             </TableCell>
                             <TableCell align="right">
                               <IconButton color="error" onClick={() => remove(index)}>
@@ -448,21 +442,21 @@ export function SalesOrderCreateForm() {
               <Stack spacing={1}>
                 <Stack direction="row" justifyContent="space-between">
                   <Typography color="textSecondary">Subtotal</Typography>
-                  <Typography>{formatCurrency(totals.subtotal)}</Typography>
+                  <Typography>{formatSalesCurrency(totals.subtotal)}</Typography>
                 </Stack>
                 <Stack direction="row" justifyContent="space-between">
                   <Typography color="textSecondary">Desc. items</Typography>
-                  <Typography>{formatCurrency(totals.itemsDiscount)}</Typography>
+                  <Typography>{formatSalesCurrency(totals.itemsDiscount)}</Typography>
                 </Stack>
                 <Stack direction="row" justifyContent="space-between">
                   <Typography color="textSecondary">Desc. orden</Typography>
-                  <Typography>{formatCurrency(orderDiscountCents || 0)}</Typography>
+                  <Typography>{formatSalesCurrency(orderDiscountCents || 0)}</Typography>
                 </Stack>
               </Stack>
               <Divider />
               <Stack direction="row" justifyContent="space-between" alignItems="center">
                 <Typography variant="h6">Total</Typography>
-                <Typography variant="h5">{formatCurrency(totals.total)}</Typography>
+                <Typography variant="h5">{formatSalesCurrency(totals.total)}</Typography>
               </Stack>
               <Button
                 variant="contained"

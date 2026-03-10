@@ -50,3 +50,15 @@ export interface CreateSalesOrderResponse {
     status: OrderRow["status"];
   };
 }
+
+export interface SalesOrderListItem {
+  id: OrderRow["id"];
+  orderNumber: OrderRow["order_number"];
+  totalCents: OrderRow["total_cents"];
+  status: OrderRow["status"];
+  createdAt: OrderRow["created_at"];
+}
+
+export interface SalesOrderListResponse {
+  sales: SalesOrderListItem[];
+}

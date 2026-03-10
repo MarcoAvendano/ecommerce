@@ -2,6 +2,7 @@ import type { CreateSalesOrderInput } from "@/features/sales/schemas";
 import type {
   CreateSalesOrderResponse,
   SalesCreateContextResponse,
+  SalesOrderListResponse,
 } from "@/features/sales/sales.types";
 
 async function parseApiResponse<T>(response: Response): Promise<T> {
@@ -37,4 +38,15 @@ export async function createSalesOrder(
   });
 
   return parseApiResponse<CreateSalesOrderResponse>(response);
+}
+
+export async function listSalesOrders(): Promise<SalesOrderListResponse> {
+  const response = await fetch("/api/sales/orders", {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  return parseApiResponse<SalesOrderListResponse>(response);
 }
