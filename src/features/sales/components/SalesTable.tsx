@@ -39,11 +39,18 @@ const salesHeadCells: readonly SalesHeadCell[] = [
 
 function getStatusColor(status: SalesOrderListItem["status"]) {
     switch (status) {
-        case "active":
+        case "paid":
             return "success";
-        case "archived":
-            return "default";
+        case "pending":
+            return "warning";
         case "draft":
+            return "default";
+        case "cancelled":
+            return "error";
+        case "fulfilled":
+            return "primary";
+        case "refunded":
+            return "info";
         default:
             return "warning";
     }
@@ -51,11 +58,18 @@ function getStatusColor(status: SalesOrderListItem["status"]) {
 
 function getStatusLabel(status: SalesOrderListItem["status"]) {
     switch (status) {
-        case "active":
-            return "Activo";
-        case "archived":
-            return "Archivado";
+        case "paid":
+            return "Pagada";
+        case "pending":
+            return "Pendiente";
         case "draft":
+            return "Borrador";
+        case "cancelled":
+            return "Cancelada";
+        case "fulfilled":
+            return "Completada";
+        case "refunded":
+            return "Reembolsada";
         default:
             return "Borrador";
     }

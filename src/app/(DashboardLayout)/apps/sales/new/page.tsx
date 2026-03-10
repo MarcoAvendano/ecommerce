@@ -1,6 +1,5 @@
-import Breadcrumb from "@/app/(DashboardLayout)/layout/shared/breadcrumb/Breadcrumb";
+// import Breadcrumb from "@/app/(DashboardLayout)/layout/shared/breadcrumb/Breadcrumb";
 import PageContainer from "@/app/components/container/PageContainer";
-import BlankCard from "@/app/components/shared/BlankCard";
 import { SalesOrderCreateForm } from "@/features/sales/components/SalesOrderCreateForm";
 import { requireAnyRole } from "@/lib/auth";
 
@@ -19,14 +18,12 @@ export default async function SalesPage() {
 
   return (
     <PageContainer title="Ventas" description="Registro de ventas POS">
-      <Breadcrumb
+      {/* <Breadcrumb
         title="Ventas"
         subtitle={`Conectado como ${authContext.profile?.full_name ?? authContext.user.email ?? "Operador"}`}
         items={breadcrumbItems}
-      />
-      <BlankCard>
-        <SalesOrderCreateForm />
-      </BlankCard>
+      /> */}
+      <SalesOrderCreateForm />
     </PageContainer>
   );
 }

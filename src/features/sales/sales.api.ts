@@ -1,6 +1,7 @@
 import type { CreateSalesOrderInput } from "@/features/sales/schemas";
 import type {
   CreateSalesOrderResponse,
+  CustomerAddressesResponse,
   SalesCreateContextResponse,
   SalesOrderListResponse,
 } from "@/features/sales/sales.types";
@@ -49,4 +50,17 @@ export async function listSalesOrders(): Promise<SalesOrderListResponse> {
   });
 
   return parseApiResponse<SalesOrderListResponse>(response);
+}
+
+export async function getCustomerAddresses(
+  customerId: string,
+): Promise<CustomerAddressesResponse> {
+  const response = await fetch(`/api/customers/${customerId}/addresses`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  return parseApiResponse<CustomerAddressesResponse>(response);
 }
