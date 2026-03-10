@@ -3,7 +3,7 @@ import { getAuthContext, hasAnyRole } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createSalesOrderSchema } from "@/features/sales/schemas";
 import type { CreateSalesOrderResponse } from "@/features/sales/sales.types";
-import { map } from 'lodash';
+import { map } from "lodash";
 
 async function requireSalesRequest() {
   const authContext = await getAuthContext();
@@ -30,9 +30,8 @@ async function loadSalesOrders(adminClient: ReturnType<typeof createAdminClient>
     adminClient
       .from("orders")
       .select("id, order_number, total_cents, status, created_at")
-      .order("created_at",
-        { ascending: false })
-  )
+      .order("created_at", { ascending: false }),
+  );
 }
 
 export async function POST(request: Request) {
@@ -57,24 +56,64 @@ export async function POST(request: Request) {
 
   const adminClient = createAdminClient();
   const { authContext } = salesRequest;
-  const { locationId, paymentMethod, notes, discountCents, items } = parsedPayload.data;
+  const {
+    locationId,
+    paymentMethod,
+    notes,
+    discountDollars,
+    customerId,
+    requiresShipping,
+    shippingAddressId,
+    items,
+  } = parsedPayload.data;
+
+  const orderDiscountCents = Math.round(discountDollars * 100);
 
   const rpcItems = items.map((item) => ({
     variant_id: item.variantId,
     quantity: item.quantity,
     unit_price_cents: item.unitPriceCents,
-    discount_cents: item.discountCents,
+    discount_cents: Math.round(item.discountDollars * 100),
     tax_cents: 0,
   }));
+
+  let shippingAddress: Record<string, unknown> | null = null;
+
+  if (requiresShipping && shippingAddressId && customerId) {
+    const { data: address, error: addressError } = await adminClient
+      .from("customer_addresses")
+      .select("label, line1, line2, city, state, postal_code, country")
+      .eq("id", shippingAddressId)
+      .eq("customer_id", customerId)
+      .maybeSingle();
+
+    if (addressError || !address) {
+      return NextResponse.json(
+        { message: "No se pudo cargar la direccion de envio seleccionada." },
+        { status: 400 },
+      );
+    }
+
+    shippingAddress = {
+      label: address.label,
+      line1: address.line1,
+      line2: address.line2,
+      city: address.city,
+      state: address.state,
+      postalCode: address.postal_code,
+      country: address.country,
+    };
+  }
 
   const { data: orderId, error: createOrderError } = await adminClient.rpc("confirm_pos_sale", {
     p_location_id: locationId,
     p_created_by: authContext.user.id,
     p_items: rpcItems,
     p_payment_method: paymentMethod,
-    p_customer_id: null,
+    p_customer_id: customerId ?? undefined,
     p_notes: notes.trim() || null,
-    p_order_discount_cents: discountCents,
+    p_order_discount_cents: orderDiscountCents,
+    p_shipping_address: shippingAddress ?? undefined,
   });
 
   if (createOrderError || !orderId) {
@@ -119,10 +158,10 @@ export async function GET() {
 
   const adminClient = createAdminClient();
   const { data: rows, error } = await loadSalesOrders(adminClient);
-  
+
   if (error || !rows) {
     return NextResponse.json(
-      { message: error?.message ?? "No se pudieron cargar las órdenes." },
+      { message: error?.message ?? "No se pudieron cargar las ordenes." },
       { status: 500 },
     );
   }
@@ -135,7 +174,7 @@ export async function GET() {
       status: row.status,
       createdAt: row.created_at,
     })),
-  }
+  };
 
   return NextResponse.json(responseBody);
 }

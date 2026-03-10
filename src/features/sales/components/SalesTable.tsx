@@ -41,9 +41,16 @@ function getStatusColor(status: SalesOrderListItem["status"]) {
     switch (status) {
         case "paid":
             return "success";
-        case "archived":
-            return "default";
+        case "pending":
+            return "warning";
         case "draft":
+            return "default";
+        case "cancelled":
+            return "error";
+        case "fulfilled":
+            return "primary";
+        case "refunded":
+            return "info";
         default:
             return "warning";
     }
@@ -53,9 +60,16 @@ function getStatusLabel(status: SalesOrderListItem["status"]) {
     switch (status) {
         case "paid":
             return "Pagada";
-        case "archived":
-            return "Archivado";
+        case "pending":
+            return "Pendiente";
         case "draft":
+            return "Borrador";
+        case "cancelled":
+            return "Cancelada";
+        case "fulfilled":
+            return "Completada";
+        case "refunded":
+            return "Reembolsada";
         default:
             return "Borrador";
     }
