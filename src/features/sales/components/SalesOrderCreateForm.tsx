@@ -21,7 +21,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { Controller, useFieldArray, useForm, type Resolver } from "react-hook-form";
+import { Controller, useFieldArray, useForm, useWatch, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { IconPlus, IconTrash } from "@tabler/icons-react";
 import CustomFormLabel from "@/app/components/forms/theme-elements/CustomFormLabel";
@@ -42,6 +42,12 @@ const defaultValues: CreateSalesOrderInput = {
   items: [],
 };
 
+function normalizeNumber(value: number | string | null | undefined) {
+  const parsedValue = Number(value);
+
+  return Number.isFinite(parsedValue) ? parsedValue : 0;
+}
+
 export function SalesOrderCreateForm() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const salesContextQuery = useSalesCreateContextQuery();
@@ -49,7 +55,6 @@ export function SalesOrderCreateForm() {
     control,
     handleSubmit,
     reset,
-    watch,
     setError,
     formState: { errors },
   } = useForm<CreateSalesOrderInput>({
@@ -61,9 +66,13 @@ export function SalesOrderCreateForm() {
     name: "items",
   });
 
-  const locationId = watch("locationId");
-  const items = watch("items");
-  const orderDiscountCents = watch("discountCents");
+  const locationId = useWatch({ control, name: "locationId", defaultValue: defaultValues.locationId });
+  const rawItems = useWatch({ control, name: "items", defaultValue: defaultValues.items });
+  const rawOrderDiscountCents = useWatch({
+    control,
+    name: "discountCents",
+    defaultValue: defaultValues.discountCents,
+  });
 
   const createSalesOrderMutation = useCreateSalesOrderMutation({
     onSuccess: (result) => {
@@ -73,6 +82,17 @@ export function SalesOrderCreateForm() {
   });
 
   const variantOptions = salesContextQuery.data?.variants ?? [];
+  const items = useMemo(
+    () =>
+      rawItems.map((item) => ({
+        ...item,
+        quantity: normalizeNumber(item.quantity),
+        unitPriceCents: normalizeNumber(item.unitPriceCents),
+        discountCents: normalizeNumber(item.discountCents),
+      })),
+    [rawItems],
+  );
+  const orderDiscountCents = normalizeNumber(rawOrderDiscountCents);
   const selectedVariantIds = new Set(items.map((item) => item.variantId));
 
   const totals = useMemo(() => {
@@ -92,6 +112,7 @@ export function SalesOrderCreateForm() {
       total: Math.max(total, 0),
     };
   }, [items, orderDiscountCents]);
+
 
   const onSubmit = handleSubmit(async (values) => {
     setSuccessMessage(null);
@@ -237,6 +258,8 @@ export function SalesOrderCreateForm() {
                           {...field}
                           id="sales-discount"
                           type="number"
+                          value={field.value ?? 0}
+                          onChange={(event) => field.onChange(normalizeNumber(event.target.value))}
                           fullWidth
                           size="small"
                           error={Boolean(errors.discountCents)}
@@ -354,6 +377,8 @@ export function SalesOrderCreateForm() {
                                   <CustomTextField
                                     {...priceField}
                                     type="number"
+                                    value={priceField.value ?? 0}
+                                    onChange={(event) => priceField.onChange(normalizeNumber(event.target.value))}
                                     size="small"
                                     sx={{ width: 130 }}
                                     error={Boolean(errors.items?.[index]?.unitPriceCents)}
@@ -370,6 +395,8 @@ export function SalesOrderCreateForm() {
                                   <CustomTextField
                                     {...quantityField}
                                     type="number"
+                                    value={quantityField.value ?? 0}
+                                    onChange={(event) => quantityField.onChange(normalizeNumber(event.target.value))}
                                     size="small"
                                     sx={{ width: 110 }}
                                     error={Boolean(errors.items?.[index]?.quantity)}
@@ -386,6 +413,8 @@ export function SalesOrderCreateForm() {
                                   <CustomTextField
                                     {...discountField}
                                     type="number"
+                                    value={discountField.value ?? 0}
+                                    onChange={(event) => discountField.onChange(normalizeNumber(event.target.value))}
                                     size="small"
                                     sx={{ width: 120 }}
                                     error={Boolean(errors.items?.[index]?.discountCents)}

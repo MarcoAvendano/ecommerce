@@ -26,7 +26,8 @@ interface ProductVariantDrawerProps {
   optionGroups: ProductOptionGroupItem[];
   value?: ProductVariantDrawerInput | null;
   onClose: () => void;
-  onSubmit: (value: ProductVariantDrawerInput) => void;
+  onSubmit: (value: ProductVariantDrawerInput) => Promise<void> | void;
+  isPending?: boolean;
 }
 
 const defaultValues: ProductVariantDrawerInput = {
@@ -47,6 +48,7 @@ export function ProductVariantDrawer({
   value,
   onClose,
   onSubmit,
+  isPending = false,
 }: ProductVariantDrawerProps) {
   const {
     control,
@@ -70,9 +72,16 @@ export function ProductVariantDrawer({
 
   const optionSelections = watch("optionSelections");
   const isExistingVariant = Boolean(value?.id);
+  const handleClose = () => {
+    if (isPending) {
+      return;
+    }
+
+    onClose();
+  };
 
   return (
-    <ResponsiveDrawer open={open} onClose={onClose}>
+    <ResponsiveDrawer open={open} onClose={handleClose}>
       <DialogTitle>{value ? "Editar variante" : "Agregar variante"}</DialogTitle>
       <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
         <DialogContent dividers>
@@ -224,8 +233,10 @@ export function ProductVariantDrawer({
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={onClose} color="inherit">Cancelar</Button>
-          <Button type="submit" variant="contained">Guardar variante</Button>
+          <Button onClick={handleClose} color="inherit" disabled={isPending}>Cancelar</Button>
+          <Button type="submit" variant="contained" disabled={isPending}>
+            {isPending ? "Guardando..." : "Guardar variante"}
+          </Button>
         </DialogActions>
       </Box>
     </ResponsiveDrawer>

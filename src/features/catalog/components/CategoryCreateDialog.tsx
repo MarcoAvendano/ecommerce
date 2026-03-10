@@ -120,6 +120,10 @@ export function CategoryCreateDialog({
   const parentOptions = categories.filter((item) => item.id !== category?.id);
 
   const handleDialogClose = () => {
+    if (isPending) {
+      return;
+    }
+
     setServerMessage(null);
     createCategoryMutation.reset();
     updateCategoryMutation.reset();
@@ -271,7 +275,7 @@ export function CategoryCreateDialog({
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleDialogClose} color="inherit">
+          <Button onClick={handleDialogClose} color="inherit" disabled={isPending}>
             Cancelar
           </Button>
           <Button type="submit" variant="contained" disabled={isPending}>

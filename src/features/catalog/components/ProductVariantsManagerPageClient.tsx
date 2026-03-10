@@ -49,6 +49,7 @@ export function ProductVariantsManagerPageClient({ productId }: ProductVariantsM
   const [createGroupOpen, setCreateGroupOpen] = useState(false);
   const [addValueGroupId, setAddValueGroupId] = useState<string | null>(null);
   const [deleteGroupId, setDeleteGroupId] = useState<string | null>(null);
+  const [pendingDeleteVariantId, setPendingDeleteVariantId] = useState<string | null>(null);
 
   const createGroupMutation = useCreateProductOptionGroupMutation({
     onSuccess: (result) => {
@@ -114,6 +115,7 @@ export function ProductVariantsManagerPageClient({ productId }: ProductVariantsM
     () => optionGroups.find((group) => group.id === deleteGroupId) ?? null,
     [deleteGroupId, optionGroups]
   );
+  const isVariantActionPending = saveVariantMutation.isPending || deleteVariantMutation.isPending;
 
   const clearFeedback = () => {
     setMessage(null);
@@ -196,21 +198,19 @@ export function ProductVariantsManagerPageClient({ productId }: ProductVariantsM
           return currentVariants.map((variant) => (variant.id === nextVariant.id ? nextVariant : variant));
         }
 
-        const nextVariants = [...currentVariants];
-        const insertedIndex = nextVariants.findIndex((variant) => !variant.id && variant.sku === nextVariant.sku);
-
-        if (insertedIndex >= 0) {
-          nextVariants[insertedIndex] = {
+        return [
+          ...currentVariants,
+          {
             ...nextVariant,
             id: result.variantId,
             initialStockQty: 0,
-          };
-        }
-
-        return nextVariants;
+          },
+        ];
       });
+      return true;
     } catch (error) {
       setLocalError(error instanceof Error ? error.message : "No se pudo guardar la variante.");
+      return false;
     }
   };
 
@@ -222,12 +222,15 @@ export function ProductVariantsManagerPageClient({ productId }: ProductVariantsM
 
     setMessage(null);
     setLocalError(null);
+    setPendingDeleteVariantId(variant.id);
 
     try {
       await deleteVariantMutation.mutateAsync({ productId, variantId: variant.id });
       setVariants((currentVariants) => currentVariants.filter((item) => item.id !== variant.id));
     } catch (error) {
       setLocalError(error instanceof Error ? error.message : "No se pudo eliminar la variante.");
+    } finally {
+      setPendingDeleteVariantId(null);
     }
   };
 
@@ -347,6 +350,7 @@ export function ProductVariantsManagerPageClient({ productId }: ProductVariantsM
               <Button
                 variant="contained"
                 startIcon={<IconPlus size={18} />}
+                disabled={isVariantActionPending}
                 onClick={() => {
                   setEditingVariantIndex(null);
                   setDrawerOpen(true);
@@ -379,6 +383,7 @@ export function ProductVariantsManagerPageClient({ productId }: ProductVariantsM
                     <TableCell align="right">
                       <Stack direction="row" spacing={1} justifyContent="flex-end">
                         <IconButton
+                          disabled={isVariantActionPending}
                           onClick={() => {
                             setEditingVariantIndex(index);
                             setDrawerOpen(true);
@@ -388,11 +393,12 @@ export function ProductVariantsManagerPageClient({ productId }: ProductVariantsM
                         </IconButton>
                         <IconButton
                           color="error"
+                          disabled={isVariantActionPending}
                           onClick={() => {
                             void removeVariant(variant);
                           }}
                         >
-                          <IconTrash size={18} />
+                          {pendingDeleteVariantId === variant.id ? <CircularProgress size={18} color="inherit" /> : <IconTrash size={18} />}
                         </IconButton>
                       </Stack>
                     </TableCell>
@@ -416,24 +422,25 @@ export function ProductVariantsManagerPageClient({ productId }: ProductVariantsM
           open={drawerOpen}
           optionGroups={optionGroups}
           value={currentVariant}
+          isPending={saveVariantMutation.isPending}
           onClose={() => {
             setDrawerOpen(false);
             setEditingVariantIndex(null);
           }}
-          onSubmit={(value) => {
+          onSubmit={async (value) => {
             const nextVariant =
               editingVariantIndex !== null && variants[editingVariantIndex]
                 ? { ...value, id: variants[editingVariantIndex]?.id }
                 : value;
 
-            setVariants((currentVariants) =>
-              editingVariantIndex !== null
-                ? currentVariants.map((variant, index) => (index === editingVariantIndex ? nextVariant : variant))
-                : [...currentVariants, nextVariant]
-            );
+            const wasSaved = await persistVariant(nextVariant);
+
+            if (!wasSaved) {
+              return;
+            }
+
             setDrawerOpen(false);
             setEditingVariantIndex(null);
-            void persistVariant(nextVariant);
           }}
         />
       </Stack>

@@ -47,6 +47,7 @@ export function ProductEditorScreen({ mode, initialData }: ProductEditorScreenPr
   const [editingVariantIndex, setEditingVariantIndex] = useState<number | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const form = useForm<ProductEditorValues>({
     resolver: zodResolver(productEditorSchema) as Resolver<ProductEditorValues>,
     defaultValues: getDefaultValues(initialData),
@@ -68,11 +69,19 @@ export function ProductEditorScreen({ mode, initialData }: ProductEditorScreenPr
   });
 
   const currentVariantValue = editingVariantIndex !== null ? (values.variants[editingVariantIndex] ?? null) : null;
-  const isPending = createProductMutation.isPending || updateProductMutation.isPending;
+  const isPending = isSubmitting || createProductMutation.isPending || updateProductMutation.isPending;
+  const preventNavigationWhilePending = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    if (!isPending) {
+      return;
+    }
+
+    event.preventDefault();
+  };
 
   const onSubmit = handleSubmit(async (submittedValues) => {
     setLocalError(null);
     setMessage(null);
+    setIsSubmitting(true);
 
     try {
       let imageUrl = submittedValues.imageUrl;
@@ -95,6 +104,8 @@ export function ProductEditorScreen({ mode, initialData }: ProductEditorScreenPr
       await createProductMutation.mutateAsync(payload);
     } catch (error) {
       setLocalError(error instanceof Error ? error.message : "No se pudo guardar el producto.");
+    } finally {
+      setIsSubmitting(false);
     }
   });
 
@@ -225,6 +236,8 @@ export function ProductEditorScreen({ mode, initialData }: ProductEditorScreenPr
                           href={`/apps/products/${initialData.product.id}/variants`}
                           variant="outlined"
                           size="small"
+                          disabled={isPending}
+                          onClick={preventNavigationWhilePending}
                         >
                           Gestionar
                         </Button>
@@ -233,6 +246,7 @@ export function ProductEditorScreen({ mode, initialData }: ProductEditorScreenPr
                         variant="contained"
                         startIcon={<IconPlus size={18} />}
                         size="small"
+                        disabled={isPending}
                         onClick={() => {
                           setEditingVariantIndex(null);
                           setDrawerOpen(true);
@@ -369,7 +383,7 @@ export function ProductEditorScreen({ mode, initialData }: ProductEditorScreenPr
                     >
                       {!values.imageUrl && !(values.imageFile instanceof File) ? <IconPhoto size={24} /> : null}
                     </Avatar>
-                    <Button component="label" variant="outlined">
+                    <Button component="label" variant="outlined" disabled={isPending}>
                       Subir imagen principal
                       <input
                         hidden
@@ -388,7 +402,13 @@ export function ProductEditorScreen({ mode, initialData }: ProductEditorScreenPr
         </Grid>
 
         <Stack direction="row" justifyContent="flex-end" spacing={2}>
-          <Button component={Link} href="/apps/products" color="inherit">
+          <Button
+            component={Link}
+            href="/apps/products"
+            color="inherit"
+            disabled={isPending}
+            onClick={preventNavigationWhilePending}
+          >
             Cancelar
           </Button>
           <Button type="submit" variant="contained" disabled={isPending}>
