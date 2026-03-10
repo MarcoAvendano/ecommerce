@@ -110,7 +110,7 @@ const Menuitems: MenuitemsType[] = [
     ],
   },
   {
-    title: "Sales",
+    title: "Ventas",
     icon: IconShoppingCart,
     // chip: "2",
     chipColor: "secondary",
@@ -150,7 +150,7 @@ const Menuitems: MenuitemsType[] = [
     icon: IconPackage,
     // chip: "2",
     chipColor: "secondary",
-    href: "/apps/contacts",
+    href: "/apps/clients",
   },
   {
     id: uniqueId(),
@@ -158,7 +158,7 @@ const Menuitems: MenuitemsType[] = [
     icon: IconPackage,
     // chip: "2",
     chipColor: "secondary",
-    href: "/apps/contacts",
+    href: "/apps/suppliers",
   },
   {
     id: uniqueId(),
