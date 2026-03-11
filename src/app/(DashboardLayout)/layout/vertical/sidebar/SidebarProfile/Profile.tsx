@@ -4,11 +4,20 @@ import { Box, Avatar, Typography, IconButton, Tooltip, useMediaQuery } from '@mu
 import { IconPower } from '@tabler/icons-react';
 import { useCustomizerStore } from '@/stores/use-customizer-store';
 import { createClient } from '@/lib/supabase/client';
+import { useProfileQuery } from '@/features/settings/settings.queries';
+
+const DEFAULT_AVATAR = "/images/profile/user-1.jpg";
 
 export const Profile = () => {
   const customizer = useCustomizerStore();
   const lgUp = useMediaQuery((theme: any) => theme.breakpoints.up('lg'));
   const hideMenu = lgUp ? customizer.isCollapse && !customizer.isSidebarHover : '';
+
+  const profileQuery = useProfileQuery();
+  const profile = profileQuery.data?.profile;
+  const avatarSrc   = profile?.avatar_url ?? DEFAULT_AVATAR;
+  const displayName = profile?.full_name  ?? "Usuario";
+  const roleLabel   = profile?.isAdmin    ? "Administrador" : "Usuario";
 
   const handleLogout = async () => {
     const supabase = createClient();
@@ -18,25 +27,28 @@ export const Profile = () => {
 
   return (
     <Box
-      display={'flex'}
+      display="flex"
       alignItems="center"
       gap={2}
-      sx={{ m: 3, p: 2, bgcolor: `${'secondary.light'}` }}
+      sx={{ m: 3, p: 2, bgcolor: 'secondary.light' }}
     >
       {!hideMenu ? (
         <>
-          <Avatar alt="Remy Sharp" src={"/images/profile/user-1.jpg"} sx={{height: 40, width: 40}} />
-
+          <Avatar
+            alt={displayName}
+            src={avatarSrc}
+            sx={{ height: 40, width: 40 }}
+          />
           <Box>
-            <Typography variant="h6">Mathew</Typography>
-            <Typography variant="caption">Designer</Typography>
+            <Typography variant="h6" noWrap>{displayName}</Typography>
+            <Typography variant="caption" noWrap>{roleLabel}</Typography>
           </Box>
           <Box sx={{ ml: 'auto' }}>
-            <Tooltip title="Logout" placement="top">
+            <Tooltip title="Cerrar sesión" placement="top">
               <IconButton
                 color="primary"
                 onClick={handleLogout}
-                aria-label="logout"
+                aria-label="cerrar sesión"
                 size="small"
               >
                 <IconPower size="20" />

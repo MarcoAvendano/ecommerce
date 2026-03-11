@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { getAuthContext } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-const BUSINESS_BUCKET = "business";
+const BUSINESS_BUCKET = "businesses";
 
 function sanitizeSegment(value: string) {
   return (
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
   }
 
   const extension = file.name.includes(".") ? file.name.split(".").pop() : "bin";
-  const filePath = `logo-${randomUUID()}.${sanitizeSegment(extension ?? "bin")}`;
+  const filePath = `logo-${sanitizeSegment(authContext.user.name ?? "user")}-${randomUUID()}.${sanitizeSegment(extension ?? "bin")}`;
   const fileBuffer = Buffer.from(await file.arrayBuffer());
 
   const { error: uploadError } = await adminClient.storage

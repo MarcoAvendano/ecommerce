@@ -20,10 +20,8 @@ import {
   useUpdateBusinessMutation,
   useUploadLogoMutation,
 } from "@/features/settings/settings.mutations";
-import {
-  updateBusinessSchema,
-  type UpdateBusinessValues,
-} from "@/features/settings/schemas";
+import { updateBusinessSchema, type UpdateBusinessValues } from "@/features/settings/schemas";
+import ImageCropModal from "@/app/components/shared/ImageCropModal";
 
 interface BusinessTabProps {
   isAdmin: boolean;
@@ -68,6 +66,9 @@ function LogoCard({ logoUrl }: { logoUrl: string | null }) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(logoUrl);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  const [cropModalOpen, setCropModalOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
   const uploadMutation = useUploadLogoMutation({
     onSuccess: (url) => {
       setPreviewUrl(url);
@@ -79,15 +80,22 @@ function LogoCard({ logoUrl }: { logoUrl: string | null }) {
     setPreviewUrl(logoUrl);
   }, [logoUrl]);
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    uploadMutation.reset();
-    setSuccessMessage(null);
-    await uploadMutation.mutateAsync(file);
+    setSelectedFile(file);
+    setCropModalOpen(true);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
+  };
+
+  const handleCropSave = async (croppedFile: File) => {
+    setCropModalOpen(false);
+    setSelectedFile(null);
+    uploadMutation.reset();
+    setSuccessMessage(null);
+    await uploadMutation.mutateAsync(croppedFile);
   };
 
   const handleReset = () => {
@@ -157,6 +165,16 @@ function LogoCard({ logoUrl }: { logoUrl: string | null }) {
           </Typography>
         </Box>
       </CardContent>
+      <ImageCropModal
+        open={cropModalOpen}
+        imageFile={selectedFile}
+        onClose={() => {
+          setCropModalOpen(false);
+          setSelectedFile(null);
+        }}
+        onCropSave={handleCropSave}
+        aspectRatio={1} // o el que prefieran para logo, por ejemplo `undefined` si quieren libre o 1 si lo quieren cuadrado
+      />
     </BlankCard>
   );
 }

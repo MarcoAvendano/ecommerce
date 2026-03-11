@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState } from 'react';
 import Link from 'next/link';
 import {
@@ -12,15 +14,24 @@ import {
 } from '@mui/material';
 import * as dropdownData from './data';
 import { createClient } from '@/lib/supabase/client';
-
+import { useProfileQuery } from '@/features/settings/settings.queries';
 import { IconMail } from '@tabler/icons-react';
 import { Stack } from '@mui/system';
 import Image from 'next/image';
 
+const DEFAULT_AVATAR = "/images/profile/user-1.jpg";
 
 const Profile = () => {
   const [anchorEl2, setAnchorEl2] = useState(null);
   const [logoutError, setLogoutError] = useState<string | null>(null);
+
+  const profileQuery = useProfileQuery();
+  const profile = profileQuery.data?.profile;
+  const avatarSrc   = profile?.avatar_url  ?? DEFAULT_AVATAR;
+  const displayName = profile?.full_name   ?? "Usuario";
+  const roleLabel   = profile?.isAdmin     ? "Administrador" : "Usuario";
+  const emailText   = profile?.email       ?? "";
+
   const handleClick2 = (event: any) => {
     setAnchorEl2(event.currentTarget);
   };
@@ -44,7 +55,7 @@ const Profile = () => {
     <Box>
       <IconButton
         size="large"
-        aria-label="show 11 new notifications"
+        aria-label="perfil de usuario"
         color="inherit"
         aria-controls="msgs-menu"
         aria-haspopup="true"
@@ -56,16 +67,13 @@ const Profile = () => {
         onClick={handleClick2}
       >
         <Avatar
-          src={"/images/profile/user-1.jpg"}
-          alt={'ProfileImg'}
-          sx={{
-            width: 35,
-            height: 35,
-          }}
+          src={avatarSrc}
+          alt={displayName}
+          sx={{ width: 35, height: 35 }}
         />
       </IconButton>
       {/* ------------------------------------------- */}
-      {/* Message Dropdown */}
+      {/* Profile Dropdown */}
       {/* ------------------------------------------- */}
       <Menu
         id="msgs-menu"
@@ -83,15 +91,19 @@ const Profile = () => {
         }}
       >
         {logoutError ? <Alert severity="error" sx={{ mb: 2 }}>{logoutError}</Alert> : null}
-        <Typography variant="h5">User Profile</Typography>
+        <Typography variant="h5">Perfil</Typography>
         <Stack direction="row" py={3} spacing={2} alignItems="center">
-        <Avatar src={"/images/profile/user-1.jpg"} alt={"ProfileImg"} sx={{ width: 95, height: 95 }} />
+          <Avatar
+            src={avatarSrc}
+            alt={displayName}
+            sx={{ width: 95, height: 95 }}
+          />
           <Box>
             <Typography variant="subtitle2" color="textPrimary" fontWeight={600}>
-              Mathew Anderson
+              {displayName}
             </Typography>
             <Typography variant="subtitle2" color="textSecondary">
-              Designer
+              {roleLabel}
             </Typography>
             <Typography
               variant="subtitle2"
@@ -101,80 +113,13 @@ const Profile = () => {
               gap={1}
             >
               <IconMail width={15} height={15} />
-              info@modernize.com
+              {emailText}
             </Typography>
           </Box>
         </Stack>
-        <Divider />
-        {dropdownData.profile.map((profile) => (
-          <Box key={profile.title}>
-            <Box sx={{ py: 2, px: 0 }} className="hover-text-primary">
-              <Link href={profile.href}>
-                <Stack direction="row" spacing={2}>
-                  <Box
-                    width="45px"
-                    height="45px"
-                    bgcolor="primary.light"
-                    display="flex"
-                    alignItems="center"
-                    justifyContent="center" flexShrink="0"
-                  >
-                    <Avatar
-                      src={profile.icon}
-                      alt={profile.icon}
-                      sx={{
-                        width: 24,
-                        height: 24,
-                        borderRadius: 0,
-                      }}
-                    />
-                  </Box>
-                  <Box>
-                    <Typography
-                      variant="subtitle2"
-                      fontWeight={600}
-                      color="textPrimary"
-                      className="text-hover"
-                      noWrap
-                      sx={{
-                        width: '240px',
-                      }}
-                    >
-                      {profile.title}
-                    </Typography>
-                    <Typography
-                      color="textSecondary"
-                      variant="subtitle2"
-                      sx={{
-                        width: '240px',
-                      }}
-                      noWrap
-                    >
-                      {profile.subtitle}
-                    </Typography>
-                  </Box>
-                </Stack>
-              </Link>
-            </Box>
-          </Box>
-        ))}
         <Box mt={2}>
-          <Box bgcolor="primary.light" p={3} mb={3} overflow="hidden" position="relative">
-            <Box display="flex" justifyContent="space-between">
-              <Box>
-                <Typography variant="h5" mb={2}>
-                  Unlimited <br />
-                  Access
-                </Typography>
-                <Button variant="contained" color="primary">
-                  Upgrade
-                </Button>
-              </Box>
-              <Image src={"/images/backgrounds/unlimited-bg.png"} width={150} height={183} style={{ height: 'auto', width: 'auto' }} alt="unlimited" className="signup-bg" />
-            </Box>
-          </Box>
           <Button variant="outlined" color="primary" fullWidth onClick={handleLogout}>
-            Logout
+            Cerrar sesión
           </Button>
         </Box>
       </Menu>

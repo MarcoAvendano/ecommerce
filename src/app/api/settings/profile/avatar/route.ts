@@ -36,7 +36,7 @@ export async function POST(request: Request) {
   }
 
   const extension = file.name.includes(".") ? file.name.split(".").pop() : "bin";
-  const filePath = `${authContext.user.id}/${randomUUID()}.${sanitizeSegment(extension ?? "bin")}`;
+  const filePath = `${authContext.user.id}/${sanitizeSegment(authContext.user.name ?? "user")}-${randomUUID()}.${sanitizeSegment(extension ?? "bin")}`;
   const fileBuffer = Buffer.from(await file.arrayBuffer());
 
   const { error: uploadError } = await adminClient.storage

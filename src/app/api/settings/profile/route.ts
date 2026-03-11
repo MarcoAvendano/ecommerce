@@ -24,7 +24,7 @@ export async function GET() {
     );
   }
 
-  return NextResponse.json({ profile });
+  return NextResponse.json({ profile: profile ? { ...profile, isAdmin: authContext.isAdmin } : null });
 }
 
 export async function PUT(request: Request) {

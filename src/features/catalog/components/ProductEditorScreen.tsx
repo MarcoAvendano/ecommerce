@@ -28,6 +28,7 @@ import CustomTextField from "@/app/components/forms/theme-elements/CustomTextFie
 import { uploadProductImage } from "@/features/catalog/catalog.api";
 import { useCreateProductMutation, useUpdateProductMutation } from "@/features/catalog/catalog.mutations";
 import { ProductVariantDrawer } from "@/features/catalog/components/ProductVariantDrawer";
+import ImageCropModal from "@/app/components/shared/ImageCropModal";
 import { productEditorSchema, type ProductVariantDrawerInput } from "@/features/catalog/product-editor.schemas";
 import type {
   ProductEditorInitialData,
@@ -44,6 +45,8 @@ interface ProductEditorScreenProps {
 
 export function ProductEditorScreen({ mode, initialData }: ProductEditorScreenProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [cropModalOpen, setCropModalOpen] = useState(false);
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const [editingVariantIndex, setEditingVariantIndex] = useState<number | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
@@ -389,9 +392,14 @@ export function ProductEditorScreen({ mode, initialData }: ProductEditorScreenPr
                         hidden
                         type="file"
                         accept="image/png,image/jpeg,image/webp"
-                        onChange={(event) =>
-                          setValue("imageFile", event.target.files?.[0] ?? null, { shouldDirty: true })
-                        }
+                        onChange={(event) => {
+                          const file = event.target.files?.[0] ?? null;
+                          if (file) {
+                            setSelectedImageFile(file);
+                            setCropModalOpen(true);
+                          }
+                          event.target.value = "";
+                        }}
                       />
                     </Button>
                   </Stack>
@@ -426,6 +434,21 @@ export function ProductEditorScreen({ mode, initialData }: ProductEditorScreenPr
           setEditingVariantIndex(null);
         }}
         onSubmit={handleVariantSubmit}
+      />
+
+      <ImageCropModal
+        open={cropModalOpen}
+        imageFile={selectedImageFile}
+        onClose={() => {
+          setCropModalOpen(false);
+          setSelectedImageFile(null);
+        }}
+        onCropSave={(croppedFile) => {
+          setCropModalOpen(false);
+          setSelectedImageFile(null);
+          setValue("imageFile", croppedFile, { shouldDirty: true });
+        }}
+        aspectRatio={1}
       />
     </Box>
   );

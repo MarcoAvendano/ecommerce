@@ -4,6 +4,7 @@ export interface UserProfile {
   full_name: string | null;
   avatar_url: string | null;
   status: string;
+  isAdmin: boolean;
 }
 
 export interface BusinessSettings {

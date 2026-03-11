@@ -12,6 +12,7 @@ export interface AuthContext {
   user: {
     id: string;
     email: string | undefined;
+    name: string | undefined;
   };
   profile: AuthProfile | null;
   isAdmin: boolean;
@@ -44,6 +45,7 @@ export async function getAuthContext(): Promise<AuthContext | null> {
     user: {
       id: user.id,
       email: user.email,
+      name: profile?.full_name || undefined,
     },
     profile,
     isAdmin: Boolean(isAdmin),

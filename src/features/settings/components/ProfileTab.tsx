@@ -21,12 +21,8 @@ import {
   useUploadAvatarMutation,
   useChangePasswordMutation,
 } from "@/features/settings/settings.mutations";
-import {
-  updateProfileSchema,
-  changePasswordSchema,
-  type UpdateProfileValues,
-  type ChangePasswordValues,
-} from "@/features/settings/schemas";
+import { updateProfileSchema, changePasswordSchema, type UpdateProfileValues, type ChangePasswordValues } from "@/features/settings/schemas";
+import ImageCropModal from "@/app/components/shared/ImageCropModal";
 
 export default function ProfileTab() {
   const { data: profileData, isLoading } = useProfileQuery();
@@ -65,6 +61,9 @@ function AvatarCard({ avatarUrl }: { avatarUrl: string | null }) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(avatarUrl);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  const [cropModalOpen, setCropModalOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
   const uploadMutation = useUploadAvatarMutation({
     onSuccess: (url) => {
       setPreviewUrl(url);
@@ -76,16 +75,23 @@ function AvatarCard({ avatarUrl }: { avatarUrl: string | null }) {
     setPreviewUrl(avatarUrl);
   }, [avatarUrl]);
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    uploadMutation.reset();
-    setSuccessMessage(null);
-    await uploadMutation.mutateAsync(file);
+    setSelectedFile(file);
+    setCropModalOpen(true);
     // Reset file input
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
+  };
+
+  const handleCropSave = async (croppedFile: File) => {
+    setCropModalOpen(false);
+    setSelectedFile(null);
+    uploadMutation.reset();
+    setSuccessMessage(null);
+    await uploadMutation.mutateAsync(croppedFile);
   };
 
   const handleReset = () => {
@@ -154,6 +160,16 @@ function AvatarCard({ avatarUrl }: { avatarUrl: string | null }) {
           </Typography>
         </Box>
       </CardContent>
+      <ImageCropModal
+        open={cropModalOpen}
+        imageFile={selectedFile}
+        onClose={() => {
+          setCropModalOpen(false);
+          setSelectedFile(null);
+        }}
+        onCropSave={handleCropSave}
+        aspectRatio={1}
+      />
     </BlankCard>
   );
 }
