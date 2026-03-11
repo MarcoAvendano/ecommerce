@@ -5,11 +5,14 @@ import {
   listLocations,
   listPaymentMethods,
 } from "@/features/settings/settings.api";
+import {
+  profileQueryKey,
+  businessQueryKey,
+  locationsQueryKey,
+  paymentMethodsQueryKey,
+} from "@/features/settings/settings.query-keys";
 
-export const profileQueryKey = ["settings", "profile"] as const;
-export const businessQueryKey = ["settings", "business"] as const;
-export const locationsQueryKey = ["settings", "locations"] as const;
-export const paymentMethodsQueryKey = ["settings", "payment-methods"] as const;
+export { profileQueryKey, businessQueryKey, locationsQueryKey, paymentMethodsQueryKey };
 
 export function useProfileQuery() {
   return useQuery({
