@@ -1,8 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
-import { getCustomerAddresses, getSalesCreateContext, listSalesOrders } from "@/features/sales/sales.api";
+import {
+  getCustomerAddresses,
+  getSalesCreateContext,
+  getSalesOrderDetail,
+  listSalesOrders,
+} from "@/features/sales/sales.api";
 
 export const salesCreateContextQueryKey = ["sales", "create-context"] as const;
 export const salesQueryKey = ["sales"] as const;
+export const salesOrderDetailQueryKey = (orderId: string) => ["sales", "order", orderId] as const;
 export const customerAddressesQueryKey = (customerId: string) =>
   ["customers", customerId, "addresses"] as const;
 
@@ -18,6 +24,14 @@ export function useSalesQuery() {
     queryKey: salesQueryKey,
     queryFn: listSalesOrders
   })
+}
+
+export function useSalesOrderDetailQuery(orderId: string, enabled = true) {
+  return useQuery({
+    queryKey: salesOrderDetailQueryKey(orderId),
+    queryFn: () => getSalesOrderDetail(orderId),
+    enabled: enabled && Boolean(orderId),
+  });
 }
 
 export function useCustomerAddressesQuery(customerId: string | null) {

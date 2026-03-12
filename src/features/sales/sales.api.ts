@@ -3,6 +3,7 @@ import type {
   CreateSalesOrderResponse,
   CustomerAddressesResponse,
   SalesCreateContextResponse,
+  SalesOrderDetailResponse,
   SalesOrderListResponse,
 } from "@/features/sales/sales.types";
 
@@ -50,6 +51,17 @@ export async function listSalesOrders(): Promise<SalesOrderListResponse> {
   });
 
   return parseApiResponse<SalesOrderListResponse>(response);
+}
+
+export async function getSalesOrderDetail(orderId: string): Promise<SalesOrderDetailResponse> {
+  const response = await fetch(`/api/sales/orders/${orderId}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  return parseApiResponse<SalesOrderDetailResponse>(response);
 }
 
 export async function getCustomerAddresses(

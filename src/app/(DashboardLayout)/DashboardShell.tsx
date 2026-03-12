@@ -35,12 +35,12 @@ export function DashboardShell({ children }: Props) {
   const theme = useTheme();
 
   return (
-    <MainWrapper>
+    <MainWrapper className="dashboard-shell">
       <title>Modernize NextJs 14.0.3</title>
       {/* ------------------------------------------- */}
       {/* Sidebar */}
       {/* ------------------------------------------- */}
-      {customizer.isHorizontal ? "" : <Sidebar />}
+      {customizer.isHorizontal ? "" : <Box className="dashboard-sidebar"><Sidebar /></Box>}
       {/* ------------------------------------------- */}
       {/* Main Wrapper */}
       {/* ------------------------------------------- */}
@@ -57,10 +57,13 @@ export function DashboardShell({ children }: Props) {
         {/* ------------------------------------------- */}
         {/* Header */}
         {/* ------------------------------------------- */}
-        {customizer.isHorizontal ? <HorizontalHeader /> : <Header />}
+        <Box className="dashboard-header">
+          {customizer.isHorizontal ? <HorizontalHeader /> : <Header />}
+        </Box>
         {/* PageContent */}
-        {customizer.isHorizontal ? <Navigation /> : ""}
+        {customizer.isHorizontal ? <Box className="dashboard-navigation"><Navigation /></Box> : ""}
         <Container
+          className="dashboard-container"
           sx={{
             maxWidth: customizer.isLayout === "boxed" ? "lg" : "100%!important",
           }}
@@ -69,7 +72,7 @@ export function DashboardShell({ children }: Props) {
           {/* PageContent */}
           {/* ------------------------------------------- */}
 
-          <Box sx={{ minHeight: "calc(100vh - 170px)" }}>
+          <Box className="dashboard-content" sx={{ minHeight: "calc(100vh - 170px)" }}>
             {children}
           </Box>
 

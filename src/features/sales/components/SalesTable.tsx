@@ -1,8 +1,16 @@
 import { ChangeEvent, useMemo, useState, type MouseEvent } from "react";
 import Box from "@mui/material/Box";
-import { SalesOrderListItem } from "../sales.types";
+import Button from "@mui/material/Button";
+import Chip from "@mui/material/Chip";
+import Link from "next/link";
+import { SalesOrderListItem, type SalesStatus } from "../sales.types";
 import { CatalogClassicTableToolbar } from "@/features/catalog/components/CatalogClassicTableToolbar";
-import { formatSalesCurrency, formatSalesDate } from "@/features/sales/sales.formatters";
+import {
+    formatSalesCurrency,
+    formatSalesDate,
+    formatSalesStatusColor,
+    formatSalesStatusLabel,
+} from "@/features/sales/sales.formatters";
 import Paper from "@mui/material/Paper";
 import { useTheme } from "@mui/material/styles";
 import TableContainer from "@mui/material/TableContainer";
@@ -16,7 +24,6 @@ import TableCell from "@mui/material/TableCell";
 import TableSortLabel from "@mui/material/TableSortLabel";
 import { visuallyHidden } from "@mui/utils";
 import Typography from "@mui/material/Typography";
-import Chip from "@mui/material/Chip";
 
 interface SalesTableProps {
     sales: SalesOrderListItem[];
@@ -37,50 +44,12 @@ const salesHeadCells: readonly SalesHeadCell[] = [
     { id: "createdAt", label: "Fecha de Creación", sortable: true },
 ];
 
-function getStatusColor(status: SalesOrderListItem["status"]) {
-    switch (status) {
-        case "paid":
-            return "success";
-        case "pending":
-            return "warning";
-        case "draft":
-            return "default";
-        case "cancelled":
-            return "error";
-        case "fulfilled":
-            return "primary";
-        case "refunded":
-            return "info";
-        default:
-            return "warning";
-    }
-}
-
-function getStatusLabel(status: SalesOrderListItem["status"]) {
-    switch (status) {
-        case "paid":
-            return "Pagada";
-        case "pending":
-            return "Pendiente";
-        case "draft":
-            return "Borrador";
-        case "cancelled":
-            return "Cancelada";
-        case "fulfilled":
-            return "Completada";
-        case "refunded":
-            return "Reembolsada";
-        default:
-            return "Borrador";
-    }
-}
-
 function getSalesSortValue(orderBy: SalesHeadCellId, sale: SalesOrderListItem) {
     switch (orderBy) {
         case "createdAt":
             return sale.createdAt;
         case "status":
-            return getStatusLabel(sale.status);
+            return formatSalesStatusLabel(sale.status);
         case "totalCents":
             return sale.totalCents;
         case "orderNumber":
@@ -98,7 +67,7 @@ export function SalesTable({ sales }: SalesTableProps) {
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);
     const [search, setSearch] = useState("");
-    const [statusFilter, setStatusFilter] = useState<"all" | SalesOrderListItem["status"]>("all");
+    const [statusFilter, setStatusFilter] = useState<"all" | SalesStatus>("all");
 
     const filteredSales = useMemo(() => {
         const normalizedSearch = search.trim().toLowerCase();
@@ -150,15 +119,17 @@ export function SalesTable({ sales }: SalesTableProps) {
                     label: "Estado",
                     value: statusFilter,
                     onChange: (value) => {
-                        setStatusFilter(value as "all" | SalesOrderListItem["status"]);
+                        setStatusFilter(value as "all" | SalesStatus);
                         setPage(0);
                     },
                     options: [
                         { value: "all", label: "Todos" },
                         { value: "pending", label: "Pendiente" },
-                        { value: "completed", label: "Completada" },
+                        { value: "fulfilled", label: "Completada" },
+                        { value: "draft", label: "Borrador" },
                         { value: "cancelled", label: "Cancelada" },
-                        { value: "paid", label: "Pagada" }
+                        { value: "paid", label: "Pagada" },
+                        { value: "refunded", label: "Reembolsada" },
                     ],
                 }}
             />
@@ -192,9 +163,19 @@ export function SalesTable({ sales }: SalesTableProps) {
                         <TableBody>
                             {paginatedSales.map((sales) => (
                                 <TableRow hover tabIndex={-1} key={sales.id}>
-                                    <TableCell>{sales.orderNumber}</TableCell>
                                     <TableCell>
-                                       <Chip label={getStatusLabel(sales.status)} color={getStatusColor(sales.status)} size="small" />
+                                        <Button
+                                            component={Link}
+                                            href={`/apps/sales/orders/${sales.id}`}
+                                            variant="text"
+                                            color="primary"
+                                            sx={{ px: 0, minWidth: 0, textTransform: "none", fontWeight: 600 }}
+                                        >
+                                            {sales.orderNumber}
+                                        </Button>
+                                    </TableCell>
+                                    <TableCell>
+                                       <Chip label={formatSalesStatusLabel(sales.status)} color={formatSalesStatusColor(sales.status)} size="small" />
                                     </TableCell>
                                     <TableCell>{formatSalesCurrency(sales.totalCents)}</TableCell>
                                     <TableCell>{formatSalesDate(sales.createdAt)}</TableCell>

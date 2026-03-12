@@ -1,1 +1,53 @@
 html { overflow-y: scroll; }
+
+.print-only {
+	display: none !important;
+}
+
+@media print {
+	html,
+	body {
+		overflow: visible !important;
+		background: #fff !important;
+	}
+
+	.dashboard-sidebar,
+	.dashboard-header,
+	.dashboard-navigation,
+	.screen-only {
+		display: none !important;
+	}
+
+	.page-wrapper,
+	.dashboard-container,
+	.dashboard-content {
+		margin: 0 !important;
+		padding: 0 !important;
+		max-width: none !important;
+		min-height: auto !important;
+	}
+
+	.print-only {
+		display: block !important;
+	}
+
+	.sales-print-voucher {
+		display: block !important;
+		width: min(92mm, 100%);
+		max-width: 92mm;
+		margin: 0 auto;
+		padding: 6mm 3mm;
+		color: #111;
+		background: #fff;
+		overflow: visible !important;
+	}
+
+	.sales-print-voucher * {
+		box-shadow: none !important;
+	}
+
+	.sales-print-items,
+	.sales-print-item {
+		overflow: visible !important;
+	}
+}
