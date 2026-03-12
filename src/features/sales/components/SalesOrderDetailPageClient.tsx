@@ -148,7 +148,7 @@ export function SalesOrderDetailPageClient({ orderId }: SalesOrderDetailPageClie
                         <DetailRow label="Metodo de pago" value={formatSalesPaymentMethod(order.paymentMethod)} />
                       </Grid>
                       <Grid item xs={12} sm={6} md={4}>
-                        <DetailRow label="Moneda" value={order.currency} />
+                        <DetailRow label="Moneda" value={order.currency === "'USD'::text" ? "USD" : order.currency} />
                       </Grid>
                     </Grid>
                   </Stack>
