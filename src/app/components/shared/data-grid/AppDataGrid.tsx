@@ -100,8 +100,13 @@ export function AppDataGrid<Row extends GridValidRowModel>({
   });
 
   return (
-    <Stack spacing={2.5}>
-      <Stack direction={{ xs: "column", lg: "row" }} spacing={2} alignItems={{ xs: "stretch", lg: "center" }}>
+    <Stack spacing={2.5} sx={{ minWidth: 0 }}>
+      <Stack
+        direction={{ xs: "column", lg: "row" }}
+        spacing={2}
+        alignItems={{ xs: "stretch", lg: "center" }}
+        sx={{ width: "100%", minWidth: 0, maxWidth: "100%" }}
+      >
         <TextField
           value={searchTerm}
           onChange={(event) => {
@@ -111,9 +116,10 @@ export function AppDataGrid<Row extends GridValidRowModel>({
           placeholder={searchPlaceholder}
           fullWidth
           size="small"
+          sx={{ minWidth: 0, flex: 1 }}
         />
         {filters.map((filter) => (
-          <FormControl key={filter.key} size="small" sx={{ minWidth: 220 }}>
+          <FormControl key={filter.key} size="small" sx={{ minWidth: { xs: 0, sm: 220 }, maxWidth: "100%" }}>
             <InputLabel id={`${filter.key}-filter-label`}>{filter.label}</InputLabel>
             <Select
               labelId={`${filter.key}-filter-label`}
@@ -138,7 +144,7 @@ export function AppDataGrid<Row extends GridValidRowModel>({
         ))}
       </Stack>
 
-      <Box sx={{ width: "100%" }}>
+      <Box sx={{ width: "100%", minWidth: 0, maxWidth: "100%", overflowX: "auto" }}>
         <DataGrid
           autoHeight
           rows={filteredRows}
@@ -152,11 +158,19 @@ export function AppDataGrid<Row extends GridValidRowModel>({
           pageSizeOptions={pageSizeOptions}
           sx={{
             border: 0,
+            width: "100%",
+            minWidth: 0,
             "& .MuiDataGrid-columnHeaders": {
               borderRadius: 1.5,
             },
             "& .MuiDataGrid-cell": {
               alignItems: "center",
+            },
+            "& .MuiDataGrid-main": {
+              minWidth: 0,
+            },
+            "& .MuiDataGrid-virtualScroller": {
+              overflowX: "auto",
             },
           }}
           localeText={{

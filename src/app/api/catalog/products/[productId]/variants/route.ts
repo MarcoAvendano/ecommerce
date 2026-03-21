@@ -135,6 +135,7 @@ async function createVariantInventoryLoad(
   variantId: string,
   initialStockQty: number,
   costCents: number,
+  movedBy: string,
 ) {
   if (initialStockQty <= 0) {
     return null;
@@ -157,19 +158,16 @@ async function createVariantInventoryLoad(
     return null;
   }
 
-  const { error: movementError } = await adminClient
-    .from("inventory_movements")
-    .insert({
-      location_id: locationId,
-      product_id: productId,
-      variant_id: variantId,
-      movement_type: "initial_load",
-      quantity: initialStockQty,
-      unit_cost_cents: costCents,
-      reference_type: "product",
-      reference_id: productId,
-      notes: "Carga inicial desde gestion de variantes.",
-    });
+  const { error: movementError } = await adminClient.rpc("record_initial_inventory_load", {
+    p_location_id: locationId,
+    p_product_id: productId,
+    p_variant_id: variantId,
+    p_quantity: initialStockQty,
+    p_unit_cost_cents: costCents,
+    p_reference_id: productId,
+    p_notes: "Carga inicial desde gestion de variantes.",
+    p_moved_by: movedBy,
+  });
 
   return movementError;
 }
@@ -185,6 +183,7 @@ export async function PUT(
   }
 
   const { productId } = await context.params;
+  const { authContext } = catalogRequest;
   const payload = (await request.json()) as {
     variant: {
       id?: string;
@@ -300,6 +299,7 @@ export async function PUT(
       variantId,
       variant.initialStockQty,
       variant.costCents,
+      authContext.user.id,
     );
 
     if (inventoryError) {

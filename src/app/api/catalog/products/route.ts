@@ -130,6 +130,7 @@ async function createInitialInventoryLoad(
   adminClient: ReturnType<typeof createAdminClient>,
   productId: string,
   locationId: string | null,
+  movedBy: string,
   variants: Array<{
     sku: string;
     initialStockQty: number;
@@ -165,15 +166,11 @@ async function createInitialInventoryLoad(
 
     return [
       {
-        location_id: locationId,
-        product_id: productId,
-        variant_id: variantId,
-        movement_type: "initial_load",
+        locationId,
+        productId,
+        variantId,
         quantity: variant.initialStockQty,
-        unit_cost_cents: variant.costCents,
-        reference_type: "product",
-        reference_id: productId,
-        notes: "Carga inicial al crear producto.",
+        unitCostCents: variant.costCents,
       },
     ];
   });
@@ -182,9 +179,24 @@ async function createInitialInventoryLoad(
     return null;
   }
 
-  const { error: movementError } = await adminClient.from("inventory_movements").insert(movementPayload);
+  for (const movement of movementPayload) {
+    const { error: movementError } = await adminClient.rpc("record_initial_inventory_load", {
+      p_location_id: movement.locationId,
+      p_product_id: movement.productId,
+      p_variant_id: movement.variantId,
+      p_quantity: movement.quantity,
+      p_unit_cost_cents: movement.unitCostCents,
+      p_reference_id: productId,
+      p_notes: "Carga inicial al crear producto.",
+      p_moved_by: movedBy,
+    });
 
-  return movementError;
+    if (movementError) {
+      return movementError;
+    }
+  }
+
+  return null;
 }
 
 async function loadCatalogProductRows(adminClient: ReturnType<typeof createAdminClient>) {
@@ -437,6 +449,7 @@ export async function POST(request: Request) {
   }
 
   const adminClient = createAdminClient();
+  const { authContext } = catalogRequest;
   const {
     name,
     slug,
@@ -504,6 +517,7 @@ export async function POST(request: Request) {
     adminClient,
     createdProduct.id,
     initialLocationId,
+    authContext.user.id,
     variants,
   );
 
@@ -625,22 +639,6 @@ export async function PUT(request: Request) {
       { message: relationsError.message ?? "No se pudieron guardar las categorias del producto." },
       { status: 500 },
     );
-  }
-
-  if (initialLocationId) {
-    const initialInventoryError = await createInitialInventoryLoad(
-      adminClient,
-      id,
-      initialLocationId,
-      variants,
-    );
-
-    if (initialInventoryError) {
-      return NextResponse.json(
-        { message: initialInventoryError.message ?? "No se pudo registrar el inventario inicial." },
-        { status: 500 },
-      );
-    }
   }
 
   const responseBody: UpdateProductResponse = {
